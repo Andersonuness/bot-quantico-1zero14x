@@ -43,7 +43,7 @@ def agora_brasil():
     """Retorna o datetime atual no fuso horário do Brasil"""
     return datetime.now(FUSO_BRASIL)
 
-# === ESQUELETO DAS CLASSES (MANTER ESTAS CLASES COMPLETAS NO SEU ARQUIVO) ===
+# === ESQUELETO DAS CLASSES (MANTIDO) ===
 
 class EstatisticasEstrategias:
     def __init__(self):
@@ -85,23 +85,26 @@ analisar_global = AnalisadorEstrategiaHorarios()
 last_id_processed = None 
 
 # =============================================================================
-# FUNÇÃO DE BUSCA DE DADOS EM SEGUNDO PLANO (ATUALIZADA PARA NOVA API)
+# FUNÇÃO DE BUSCA DE DADOS EM SEGUNDO PLANO (TIMEOUT AUMENTADO)
 # =============================================================================
 
 def verificar_resultados():
     """Busca o último resultado da Blaze e processa se for novo."""
     global last_id_processed
     
+    # NOVO TIMEOUT DE 30 SEGUNDOS
+    REQUEST_TIMEOUT = 30
+    
     while True:
         try:
-            print(f"THREAD: Tentando buscar API (Stream /current). last_id_processed: {last_id_processed}", file=sys.stderr)
+            print(f"THREAD: Tentando buscar API (Stream /current). Tempo limite: {REQUEST_TIMEOUT}s. last_id_processed: {last_id_processed}", file=sys.stderr)
             
-            # 1. Busca os resultados
-            response = requests.get(API_URL, timeout=10)
+            # 1. Busca os resultados com o novo timeout
+            response = requests.get(API_URL, timeout=REQUEST_TIMEOUT)
             response.raise_for_status() 
             data = response.json()
             
-            # --- MUDANÇA: A NOVA API RETORNA UM OBJETO COM 'last_game' ---
+            # --- Lógica de processamento da API /current ---
             last_game = data.get('last_game')
             
             if not last_game:
@@ -116,7 +119,7 @@ def verificar_resultados():
                 time.sleep(3)
                 continue
 
-            # --- MUDANÇA: Mapeamento de cores (Agora o 'color' é uma string) ---
+            # Mapeamento de cores 
             cor_str = str(last_game.get('color', '')).lower() 
             color_map = {'0': 'vermelho', '1': 'preto', '2': 'branco'}
             
@@ -135,14 +138,14 @@ def verificar_resultados():
                 print(f"THREAD: SUCESSO! Rodada {numero} ({cor}) processada. ID: {last_id_processed}", file=sys.stderr)
             
         except HTTPError as e:
-            # Captura erros HTTP (incluindo o 451)
+            # Captura erros HTTP (4xx e 5xx)
             print(f"THREAD ERRO: HTTPError ao buscar API: {e}", file=sys.stderr)
         except requests.exceptions.RequestException as e:
-            print(f"THREAD ERRO: RequestException (rede/timeout): {e}", file=sys.stderr)
+            # Captura Timeout, ConnectionError e outros problemas de rede
+            print(f"THREAD ERRO: RequestException (rede/tempo limite): {e}", file=sys.stderr)
         except json.JSONDecodeError:
             print("THREAD ERRO: Erro ao decodificar JSON da API.", file=sys.stderr)
         except Exception as e:
-            # Captura qualquer erro inesperado e imprime o Traceback completo
             print(f"THREAD ERRO CRÍTICO: Erro inesperado ao processar resultado. Detalhes abaixo:", file=sys.stderr)
             traceback.print_exc(file=sys.stderr)
             
@@ -158,7 +161,6 @@ app = Flask(__name__)
 @app.route('/')
 @auth.login_required
 def index():
-    # Certifique-se de que você tem o arquivo 'index.html' no mesmo diretório
     return render_template('index.html') 
 
 @app.route('/data')
