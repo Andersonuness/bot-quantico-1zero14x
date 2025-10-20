@@ -32,12 +32,20 @@ def get_password(username):
 
 
 # =============================================================================
-# LÓGICA DO BOT (COM API DE STREAM)
+# LÓGICA DO BOT (COM API DE STREAM E HEADERS)
 # =============================================================================
 
 # API ALTERNATIVA PARA CONTORNAR ERRO 451
 API_URL = 'https://blaze.bet/api/roulette_games/current' 
 FUSO_BRASIL = timezone(timedelta(hours=-3))
+
+# HEADERS ADICIONADOS PARA FAZER A REQUISIÇÃO PARECER UM NAVEGADOR
+HEADERS = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    'Accept': 'application/json, text/plain, */*',
+    'Accept-Language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7',
+    'Connection': 'keep-alive',
+}
 
 def agora_brasil():
     """Retorna o datetime atual no fuso horário do Brasil"""
@@ -85,7 +93,7 @@ analisar_global = AnalisadorEstrategiaHorarios()
 last_id_processed = None 
 
 # =============================================================================
-# FUNÇÃO DE BUSCA DE DADOS EM SEGUNDO PLANO (TIMEOUT AUMENTADO)
+# FUNÇÃO DE BUSCA DE DADOS EM SEGUNDO PLANO (TIMEOUT AUMENTADO E HEADERS)
 # =============================================================================
 
 def verificar_resultados():
@@ -99,8 +107,8 @@ def verificar_resultados():
         try:
             print(f"THREAD: Tentando buscar API (Stream /current). Tempo limite: {REQUEST_TIMEOUT}s. last_id_processed: {last_id_processed}", file=sys.stderr)
             
-            # 1. Busca os resultados com o novo timeout
-            response = requests.get(API_URL, timeout=REQUEST_TIMEOUT)
+            # 1. Busca os resultados com o novo timeout E HEADERS
+            response = requests.get(API_URL, timeout=REQUEST_TIMEOUT, headers=HEADERS)
             response.raise_for_status() 
             data = response.json()
             
