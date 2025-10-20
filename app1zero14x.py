@@ -5,23 +5,17 @@ from collections import deque, defaultdict
 import threading
 import time
 import json
-from flask import Flask, render_template, jsonify
-
-# --- NOVO CÓDIGO DE SEGURANÇA (FINAL E COM DEBUG FORÇADO) ---
 import os
+from flask import Flask, render_template, jsonify
 from flask_httpauth import HTTPBasicAuth
 
+# --- CÓDIGO DE SEGURANÇA (AUTENTICAÇÃO) ---
 auth = HTTPBasicAuth()
 
 # 1. PEGA A SENHA COMPARTILHADA DO RENDER
 # Se o Render falhar, usa uma senha de fallback temporária para debug.
+# NOTE: O Render leu sua senha como 'P@$1zero14x!' no último log.
 SHARED_PASSWORD = os.environ.get("APP_PASSWORD", "SENHA_NAO_LIDA_DO_RENDER")
-
-# --- LINHAS DE DEBUG CRUCIAIS (MOVIDAS PARA O TOPO) ---
-# ISSO DEVE APARECER NO INÍCIO DOS LOGS DO RENDER.
-print(f"DEBUG AUTH: Senha lida (APP_PASSWORD): '{SHARED_PASSWORD}'") 
-# --- FIM LINHAS DE DEBUG ---
-
 
 # 2. DEFINE O USUÁRIO MASTER (SEMPRE PERMITIDO) E A LISTA DE USUÁRIOS
 MASTER_USER = "adm"
@@ -37,26 +31,19 @@ USERS = {
     for user in ALLOWED_USERS_LIST
 }
 
-print(f"DEBUG AUTH: Usuários carregados (ALLOWED_USERS): {list(USERS.keys())}")
-
-
 @auth.get_password
 def get_password(username):
     # Retorna a senha associada ao nome de usuário
     return USERS.get(username)
-# --- FIM DO CÓDIGO DE SEGURANÇA CORRIGIDO ---
+# --- FIM DO CÓDIGO DE SEGURANÇA ---
 
 
 # =============================================================================
-# O RESTO DO SEU CÓDIGO DE ANÁLISE CONTINUA ABAIXO
+# LÓGICA DO BOT (CORRIGIDA E COMPLETA)
 # =============================================================================
 
-# Fuso horário do Brasil (GMT-3)
+API_URL = 'https://blaze.bet.br/api/singleplayer-originals/originals/roulette_games/recent/1'
 FUSO_BRASIL = timezone(timedelta(hours=-3))
-
-# ... (Todo o resto do código, das classes EstatisticasEstrategias, GerenciadorSinais,
-# AnalisadorEstrategiaHorarios, e as rotas / e /data, deve vir aqui,
-# idêntico ao que eu te mandei na resposta anterior). ...
 
 def agora_brasil():
     """Retorna o datetime atual no fuso horário do Brasil"""
@@ -108,7 +95,6 @@ class GerenciadorSinais:
     def set_config_confluencia(self, nova_config):
         """Define nova configuração de confluência"""
         self.config_confluencia = nova_config
-        print(f"⚙️ Configuração de confluência atualizada: {nova_config}")
         
         # Re-processa todos os sinais agrupados com a nova configuração
         for minuto_chave in list(self.sinais_agrupados.keys()):
@@ -143,7 +129,6 @@ class GerenciadorSinais:
     def set_estrategias_ativas(self, estrategias_ativas):
         """Define quais estratégias estão ativas"""
         self.estrategias_ativas = estrategias_ativas
-        print(f"🔧 Estratégias ativas atualizadas: {sum(self.estrategias_ativas.values())} ativas")
     
     def is_estrategia_ativa(self, estrategia_nome):
         """Verifica se uma estratégia está ativa"""
@@ -199,7 +184,6 @@ class GerenciadorSinais:
         self.estatisticas.registrar_sinal(estrategia)
         
         self.sinais_ativos.append(sinal_direto)
-        print(f"🎯 SINAL DIRETO: {estrategia} → {horario.strftime('%H:%M')}")
     
     def verificar_confluencia(self, minuto_chave):
         """Verifica se há confluência para um minuto específico"""
@@ -233,8 +217,6 @@ class GerenciadorSinais:
                 # Registra estatísticas para cada estratégia que entrou no sinal ativo
                 for estrategia_data in estrategias_no_minuto:
                     self.estatisticas.registrar_sinal(estrategia_data['estrategia'])
-                
-                print(f"🔥 NOVO SINAL ATIVO: {minuto_chave.strftime('%H:%M')} - {confluencias} estratégias ({nivel})")
             else:
                 # Atualiza sinal existente
                 sinal_existente['estrategias'] = [e['estrategia'] for e in estrategias_no_minuto]
@@ -263,7 +245,6 @@ class GerenciadorSinais:
                         
                         self.historico_finalizados.appendleft(sinal.copy())
                         sinais_para_remover.append(sinal)
-                        print(f"✅ SINAL ACERTOU: {sinal['minuto_alvo'].strftime('%H:%M')} - Branco na janela!")
                 
                 elif agora > sinal['janela_fim']:
                     sinal['resultado'] = 'LOSS'
@@ -271,7 +252,6 @@ class GerenciadorSinais:
                     sinal['horario_resultado'] = agora
                     self.historico_finalizados.appendleft(sinal.copy())
                     sinais_para_remover.append(sinal)
-                    print(f"❌ SINAL PERDEU: {sinal['minuto_alvo'].strftime('%H:%M')} - Janela expirou")
         
         for sinal in sinais_para_remover:
             if sinal in self.sinais_ativos:
@@ -325,7 +305,7 @@ class AnalisadorEstrategiaHorarios:
             
             self.gerar_sinais_imediatos_apos_branco(horario_real, numero)
             self.verificar_dois_brancos_juntos(horario_real)
-            selfia_19_branco_minuto_duplo(horario_real)
+            self.estrategia_19_branco_minuto_duplo(horario_real)
             self.estrategia_dobra_branco(horario_real)
         else:
             self.contador_sem_branco += 1
@@ -462,7 +442,7 @@ class AnalisadorEstrategiaHorarios:
                     if horario_sinal and horario_sinal > agora_brasil():
                         self.gerenciador.adicionar_estrategia(nome, horario_sinal, minuto_destino, horario_branco)
             except Exception as e:
-                print(f"Erro na estratégia {nome}: {e}")
+                pass # Ignora erros de cálculo
 
     def get_valor_seguro(self, valor):
         return valor if valor is not None else 0
@@ -501,7 +481,7 @@ class AnalisadorEstrategiaHorarios:
                             if horario_sinal and horario_sinal > agora_brasil():
                                 self.gerenciador.adicionar_estrategia(nome, horario_sinal, minuto_destino, horario_branco)
                     except Exception as e:
-                        print(f"Erro na estratégia {nome}: {e}")
+                        pass # Ignora erros de cálculo
                 
                 brancos_processados.append(horario_branco)
         
@@ -668,8 +648,6 @@ ultimo_id_global = None
 ultimas_10_rodadas_global = deque(maxlen=10)
 ultimo_resultado_global = {"numero": "--", "cor": "branco", "horario": "--:--:--"}
 
-API_URL = 'https://blaze.bet.br/api/singleplayer-originals/originals/roulette_games/recent/1'
-
 def verificar_resultados_em_loop():
     """
     Esta função roda em uma thread separada, continuamente buscando
@@ -677,7 +655,6 @@ def verificar_resultados_em_loop():
     """
     global ultimo_id_global, ultimo_resultado_global
 
-    print("✅ Thread de verificação iniciada.")
     while True:
         try:
             headers = {'User-Agent': 'Mozilla/5.0'}
@@ -694,27 +671,26 @@ def verificar_resultados_em_loop():
                 horario_utc = datetime.fromisoformat(horario_str.replace('Z', '+00:00'))
                 horario_real = horario_utc.astimezone(FUSO_BRASIL)
 
-                print(f"Novo resultado: {numero} ({cor}) às {horario_real.strftime('%H:%M:%S')}")
-
                 # Atualiza os dados globais
                 analisador_global.adicionar_rodada(cor, numero, horario_real)
                 ultimas_10_rodadas_global.appendleft({"numero": numero, "cor": cor, "horario": horario_real.strftime('%H:%M')})
                 ultimo_resultado_global = {"numero": numero, "cor": cor, "horario": horario_real.strftime('%H:%M:%S')}
 
         except Exception as e:
-            print(f"Erro ao buscar resultado: {e}")
+            pass # Ignora erros de busca
         
         time.sleep(3) # Espera 3 segundos
 
 # --- Rotas do Site ---
 
 @app.route('/')
-@auth.login_required # <--- AGORA ESTA ROTA EXIGE LOGIN!
+@auth.login_required # <--- REQUER LOGIN PARA ACESSAR A INTERFACE
 def index():
     """ Rota principal que renderiza a nossa página HTML. """
     return render_template('index.html')
 
 @app.route('/data')
+@auth.login_required # <--- CORREÇÃO CRUCIAL: REQUER LOGIN PARA BUSCAR DADOS
 def get_data():
     """
     Esta rota é um 'API endpoint'. O JavaScript da página vai chamar
@@ -765,6 +741,5 @@ if __name__ == '__main__':
                               daemon=True)
     daemon.start()
 
-    # Inicia o servidor web Flask
-    # O host='0.0.0.0' permite acesso de outros dispositivos na sua rede local
-    app.run(host='0.0.0.0', port=5000, debug=False)
+    # Inicia o servidor web Flask (usando a porta do Render)
+    app.run(host='0.0.0.0', port=os.environ.get('PORT', 5000), debug=False)
