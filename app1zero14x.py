@@ -32,11 +32,11 @@ def get_password(username):
 
 
 # =============================================================================
-# LÓGICA DO BOT (COM API DE STREAM E HEADERS)
+# LÓGICA DO BOT (API ORIGINAL: /recent/1)
 # =============================================================================
 
-# API ALTERNATIVA PARA CONTORNAR ERRO 451
-API_URL = 'https://blaze.bet/api/roulette_games/current' 
+# API ORIGINAL REVERTIDA, CONFORME SOLICITADO
+API_URL = 'https://blaze.bet/api/singleplayer-originals/originals/roulette_games/recent/1' 
 FUSO_BRASIL = timezone(timedelta(hours=-3))
 
 # HEADERS ADICIONADOS PARA FAZER A REQUISIÇÃO PARECER UM NAVEGADOR
@@ -93,33 +93,31 @@ analisar_global = AnalisadorEstrategiaHorarios()
 last_id_processed = None 
 
 # =============================================================================
-# FUNÇÃO DE BUSCA DE DADOS EM SEGUNDO PLANO (TIMEOUT AUMENTADO E HEADERS)
+# FUNÇÃO DE BUSCA DE DADOS EM SEGUNDO PLANO (AJUSTADA PARA /recent/1)
 # =============================================================================
 
 def verificar_resultados():
     """Busca o último resultado da Blaze e processa se for novo."""
     global last_id_processed
     
-    # NOVO TIMEOUT DE 30 SEGUNDOS
     REQUEST_TIMEOUT = 30
     
     while True:
         try:
-            print(f"THREAD: Tentando buscar API (Stream /current). Tempo limite: {REQUEST_TIMEOUT}s. last_id_processed: {last_id_processed}", file=sys.stderr)
+            print(f"THREAD: Tentando buscar API (Original /recent/1). Tempo limite: {REQUEST_TIMEOUT}s. last_id_processed: {last_id_processed}", file=sys.stderr)
             
-            # 1. Busca os resultados com o novo timeout E HEADERS
+            # 1. Busca os resultados com timeout E HEADERS
             response = requests.get(API_URL, timeout=REQUEST_TIMEOUT, headers=HEADERS)
             response.raise_for_status() 
             data = response.json()
             
-            # --- Lógica de processamento da API /current ---
-            last_game = data.get('last_game')
-            
-            if not last_game:
-                print("THREAD: 'last_game' não encontrado na resposta da API.", file=sys.stderr)
+            # --- MUDANÇA: API /recent/1 retorna uma lista, pegamos o primeiro item ---
+            if not isinstance(data, list) or not data:
+                print("THREAD: Resposta inesperada (não é uma lista vazia).", file=sys.stderr)
                 time.sleep(3)
                 continue
-                
+            
+            last_game = data[0]
             game_id = last_game.get('id')
             
             # Ignora resultados que já foram processados
@@ -127,11 +125,11 @@ def verificar_resultados():
                 time.sleep(3)
                 continue
 
-            # Mapeamento de cores 
-            cor_str = str(last_game.get('color', '')).lower() 
-            color_map = {'0': 'vermelho', '1': 'preto', '2': 'branco'}
+            # Mapeamento de cores (a API /recent/1 retorna 0, 1, 2 como inteiros)
+            cor_int = last_game.get('color')
+            color_map = {0: 'vermelho', 1: 'preto', 2: 'branco'}
             
-            cor = color_map.get(cor_str)
+            cor = color_map.get(cor_int)
             numero = last_game.get('roll')
             created_at_str = last_game.get('created_at')
             
@@ -146,10 +144,10 @@ def verificar_resultados():
                 print(f"THREAD: SUCESSO! Rodada {numero} ({cor}) processada. ID: {last_id_processed}", file=sys.stderr)
             
         except HTTPError as e:
-            # Captura erros HTTP (4xx e 5xx)
-            print(f"THREAD ERRO: HTTPError ao buscar API: {e}", file=sys.stderr)
+            # ESTE VAI CAPTURAR O 451
+            print(f"THREAD ERRO: HTTPError ao buscar API: {e}. ESTE ERA O ERRO 451 ORIGINAL.", file=sys.stderr)
         except requests.exceptions.RequestException as e:
-            # Captura Timeout, ConnectionError e outros problemas de rede
+            # Captura Timeout, ConnectionError
             print(f"THREAD ERRO: RequestException (rede/tempo limite): {e}", file=sys.stderr)
         except json.JSONDecodeError:
             print("THREAD ERRO: Erro ao decodificar JSON da API.", file=sys.stderr)
@@ -174,7 +172,7 @@ def index():
 @app.route('/data')
 @auth.login_required
 def data():
-    # Coleta sinais e estatísticas
+    # Coleta sinais e estatísticas (Lógica mantida)
     gerenciador = analisar_global.gerenciador 
     sinais_finalizados = gerenciador.get_sinais_finalizados()
     todas_estatisticas = gerenciador.estatisticas.get_todas_estatisticas()
@@ -249,5 +247,6 @@ if not daemon.is_alive():
 
 
 if __name__ == '__main__':
+    # O gunicorn usará 0.0.0.0:8080. Esta linha é apenas para debug local.
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False)
