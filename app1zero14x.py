@@ -1,6 +1,6 @@
 import sys
 import requests
-import traceback # ADICIONADO PARA RASTREAR ERROS CRÍTICOS
+import traceback 
 from requests.exceptions import Timeout, RequestException, HTTPError
 from datetime import datetime, timedelta, timezone
 from collections import deque, defaultdict
@@ -14,7 +14,6 @@ from flask_httpauth import HTTPBasicAuth
 # --- CÓDIGO DE SEGURANÇA (AUTENTICAÇÃO) ---
 auth = HTTPBasicAuth()
 
-# 1. PEGA A SENHA COMPARTILHADA DO RENDER
 SHARED_PASSWORD = os.environ.get("APP_PASSWORD", "SENHA_NAO_LIDA_DO_RENDER")
 MASTER_USER = "adm"
 
@@ -44,7 +43,7 @@ def agora_brasil():
     """Retorna o datetime atual no fuso horário do Brasil"""
     return datetime.now(FUSO_BRASIL)
 
-# === ESQUELETO DAS CLASSES (O código completo das estratégias deve estar aqui) ===
+# === ESQUELETO DAS CLASSES ===
 
 class EstatisticasEstrategias:
     def __init__(self):
@@ -70,17 +69,14 @@ class GerenciadorSinais:
         pass
     def get_sinais_ativos(self): return []
     def get_sinais_finalizados(self): return list(self.historico_finalizados)
-    # Demais métodos omitidos por brevidade
-
+    
 class AnalisadorEstrategiaHorarios:
     def __init__(self):
-        self.ultimas_rodadas = deque(maxlen=None) 
+        self.ultimas_rodadas = deque(maxlen=None) # MAXLEN=NONE MANTIDO
         self.gerenciador = GerenciadorSinais()
     def adicionar_rodada(self, cor, numero, horario_real):
         self.ultimas_rodadas.append((cor, numero, horario_real))
-        # Chamada à lógica das estratégias e processamento de resultado
         self.gerenciador.processar_resultado(horario_real, cor)
-    # Demais métodos omitidos por brevidade
 
 # =============================================================================
 # INSTANCIAÇÃO GLOBAL
@@ -89,7 +85,7 @@ analisar_global = AnalisadorEstrategiaHorarios()
 last_id_processed = None 
 
 # =============================================================================
-# FUNÇÃO DE BUSCA DE DADOS EM SEGUNDO PLANO (ROBUSTA)
+# FUNÇÃO DE BUSCA DE DADOS EM SEGUNDO PLANO (VERSÃO MAIS ESTÁVEL)
 # =============================================================================
 
 def verificar_resultados():
@@ -153,7 +149,7 @@ def verificar_resultados():
         except Exception as e:
             # Captura qualquer erro inesperado e imprime o Traceback completo
             print(f"THREAD ERRO CRÍTICO: Erro inesperado ao processar resultado. Detalhes abaixo:", file=sys.stderr)
-            traceback.print_exc(file=sys.stderr) # Imprime o rastreamento completo
+            traceback.print_exc(file=sys.stderr) 
             
         time.sleep(3)
 
@@ -177,7 +173,7 @@ def data():
     sinais_finalizados = gerenciador.get_sinais_finalizados()
     todas_estatisticas = gerenciador.estatisticas.get_todas_estatisticas()
     
-    # --- CÁLCULO DE ESTATÍSTICAS (Omitido por brevidade, mas completo no seu arquivo) ---
+    # --- CÁLCULO DE ESTATÍSTICAS ---
     hoje = agora_brasil().date()
     sinais_finalizados_hoje = [s for s in sinais_finalizados if s['horario_previsto'].date() == hoje]
     total = len(sinais_finalizados_hoje)
@@ -236,7 +232,7 @@ def data():
 
 
 # =============================================================================
-# INICIALIZAÇÃO DA THREAD (MOVIDA PARA FORA DO if __name__)
+# INICIALIZAÇÃO DA THREAD
 # =============================================================================
 daemon = threading.Thread(name='verificador_resultados',
                           target=verificar_resultados,
