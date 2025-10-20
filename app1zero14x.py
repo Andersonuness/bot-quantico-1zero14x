@@ -32,18 +32,18 @@ def get_password(username):
 
 
 # =============================================================================
-# LÓGICA DO BOT (API ORIGINAL)
+# LÓGICA DO BOT (COM API DE STREAM)
 # =============================================================================
 
-# API ORIGINAL MANTIDA, CONFORME SOLICITADO
-API_URL = 'https://blaze.bet.br/api/singleplayer-originals/originals/roulette_games/recent/1'
+# API ALTERNATIVA PARA CONTORNAR ERRO 451
+API_URL = 'https://blaze.bet/api/roulette_games/current' 
 FUSO_BRASIL = timezone(timedelta(hours=-3))
 
 def agora_brasil():
     """Retorna o datetime atual no fuso horário do Brasil"""
     return datetime.now(FUSO_BRASIL)
 
-# === ESQUELETO DAS CLASSES ===
+# === ESQUELETO DAS CLASSES (MANTER ESTAS CLASES COMPLETAS NO SEU ARQUIVO) ===
 
 class EstatisticasEstrategias:
     def __init__(self):
@@ -69,10 +69,10 @@ class GerenciadorSinais:
         pass
     def get_sinais_ativos(self): return []
     def get_sinais_finalizados(self): return list(self.historico_finalizados)
-    
+
 class AnalisadorEstrategiaHorarios:
     def __init__(self):
-        self.ultimas_rodadas = deque(maxlen=None) # MAXLEN=NONE MANTIDO
+        self.ultimas_rodadas = deque(maxlen=None) 
         self.gerenciador = GerenciadorSinais()
     def adicionar_rodada(self, cor, numero, horario_real):
         self.ultimas_rodadas.append((cor, numero, horario_real))
@@ -85,7 +85,7 @@ analisar_global = AnalisadorEstrategiaHorarios()
 last_id_processed = None 
 
 # =============================================================================
-# FUNÇÃO DE BUSCA DE DADOS EM SEGUNDO PLANO (VERSÃO MAIS ESTÁVEL)
+# FUNÇÃO DE BUSCA DE DADOS EM SEGUNDO PLANO (ATUALIZADA PARA NOVA API)
 # =============================================================================
 
 def verificar_resultados():
@@ -94,53 +94,48 @@ def verificar_resultados():
     
     while True:
         try:
-            print(f"THREAD: Tentando buscar API (Original /recent/1). last_id_processed: {last_id_processed}", file=sys.stderr)
+            print(f"THREAD: Tentando buscar API (Stream /current). last_id_processed: {last_id_processed}", file=sys.stderr)
             
             # 1. Busca os resultados
             response = requests.get(API_URL, timeout=10)
-            
-            # 2. TRATAMENTO ESPECÍFICO PARA ERRO 451 E OUTROS (LANÇA HTTPError)
             response.raise_for_status() 
             data = response.json()
             
-            print(f"THREAD: Busca API OK. Resultados encontrados: {len(data)}", file=sys.stderr)
+            # --- MUDANÇA: A NOVA API RETORNA UM OBJETO COM 'last_game' ---
+            last_game = data.get('last_game')
             
-            # 3. Processa os resultados (Lista original da API /recent/1)
-            new_results = []
+            if not last_game:
+                print("THREAD: 'last_game' não encontrado na resposta da API.", file=sys.stderr)
+                time.sleep(3)
+                continue
+                
+            game_id = last_game.get('id')
             
-            for result in reversed(data):
-                game_id = result.get('id')
-                
-                if last_id_processed is not None and game_id <= last_id_processed:
-                    continue
-                
-                color_map = {0: 'vermelho', 1: 'preto', 2: 'branco'}
-                
-                cor = color_map.get(result.get('color'))
-                numero = result.get('roll')
-                created_at_str = result.get('created_at')
-                
-                if cor is not None and numero is not None and created_at_str:
-                    horario_utc = datetime.strptime(created_at_str.split('.')[0], '%Y-%m-%dT%H:%M:%S').replace(tzinfo=timezone.utc)
-                    horario_brasil = horario_utc.astimezone(FUSO_BRASIL)
-                    
-                    new_results.append({
-                        'id': game_id,
-                        'cor': cor,
-                        'numero': numero,
-                        'horario': horario_brasil
-                    })
-            
-            for result in new_results:
-                analisar_global.adicionar_rodada(result['cor'], result['numero'], result['horario'])
-                last_id_processed = max(last_id_processed or 0, result['id']) 
-            
-            if new_results:
-                print(f"THREAD: Processamento BEM SUCEDIDO. Última rodada ID: {last_id_processed}", file=sys.stderr)
+            # Ignora resultados que já foram processados
+            if last_id_processed is not None and game_id <= last_id_processed:
+                time.sleep(3)
+                continue
 
-        # Trata erros específicos (Timeout, Conexão, 451, etc.)
+            # --- MUDANÇA: Mapeamento de cores (Agora o 'color' é uma string) ---
+            cor_str = str(last_game.get('color', '')).lower() 
+            color_map = {'0': 'vermelho', '1': 'preto', '2': 'branco'}
+            
+            cor = color_map.get(cor_str)
+            numero = last_game.get('roll')
+            created_at_str = last_game.get('created_at')
+            
+            if cor is not None and numero is not None and created_at_str:
+                horario_utc = datetime.strptime(created_at_str.split('.')[0], '%Y-%m-%dT%H:%M:%S').replace(tzinfo=timezone.utc)
+                horario_brasil = horario_utc.astimezone(FUSO_BRASIL)
+                
+                # 2. Processa o novo resultado
+                analisar_global.adicionar_rodada(cor, numero, horario_brasil)
+                last_id_processed = max(last_id_processed or 0, game_id) 
+                
+                print(f"THREAD: SUCESSO! Rodada {numero} ({cor}) processada. ID: {last_id_processed}", file=sys.stderr)
+            
         except HTTPError as e:
-            # Captura o erro 451 Unavailable For Legal Reasons
+            # Captura erros HTTP (incluindo o 451)
             print(f"THREAD ERRO: HTTPError ao buscar API: {e}", file=sys.stderr)
         except requests.exceptions.RequestException as e:
             print(f"THREAD ERRO: RequestException (rede/timeout): {e}", file=sys.stderr)
@@ -149,7 +144,7 @@ def verificar_resultados():
         except Exception as e:
             # Captura qualquer erro inesperado e imprime o Traceback completo
             print(f"THREAD ERRO CRÍTICO: Erro inesperado ao processar resultado. Detalhes abaixo:", file=sys.stderr)
-            traceback.print_exc(file=sys.stderr) 
+            traceback.print_exc(file=sys.stderr)
             
         time.sleep(3)
 
@@ -163,6 +158,7 @@ app = Flask(__name__)
 @app.route('/')
 @auth.login_required
 def index():
+    # Certifique-se de que você tem o arquivo 'index.html' no mesmo diretório
     return render_template('index.html') 
 
 @app.route('/data')
