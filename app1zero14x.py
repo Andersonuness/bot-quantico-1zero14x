@@ -13,16 +13,18 @@ from flask_httpauth import HTTPBasicAuth
 
 auth = HTTPBasicAuth()
 
-# O Render irá injetar a senha na variável de ambiente 'APP_PASSWORD'
-USERS = {
-    "admin": os.environ.get("APP_PASSWORD") # Usuário: "admin", Senha: A que você definir no Render
-}
+# Pega a lista de usuários permitidos (separados por vírgula) da variável ALLOWED_USERS
+# Se a variável não existir, usa "admin" como padrão.
+ALLOWED_USERS_LIST = os.environ.get("ALLOWED_USERS", "admin").split(',')
+# Pega a senha compartilhada para todos os usuários
+SHARED_PASSWORD = os.environ.get("APP_PASSWORD") 
 
 @auth.get_password
 def get_password(username):
-    if username in USERS:
-        # Retorna a senha associada ao nome de usuário (que será lida do Render)
-        return USERS.get(username)
+    # 1. Verifica se o nome de usuário digitado é um usuário permitido (comparação insensível a maiúsculas/minúsculas)
+    if username.lower() in [u.lower() for u in ALLOWED_USERS_LIST]:
+        # 2. Se for permitido, retorna a senha compartilhada que o usuário deve usar
+        return SHARED_PASSWORD
     return None
 # --- FIM DO NOVO CÓDIGO DE SEGURANÇA ---
 
