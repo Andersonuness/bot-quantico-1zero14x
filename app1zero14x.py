@@ -36,7 +36,7 @@ def get_password(username):
 # LÓGICA DO BOT (API ORIGINAL)
 # =============================================================================
 
-# CORREÇÃO CRÍTICA APLICADA: Removido o ".br" que causava o crash (502).
+# URL CORRIGIDA (SEM O .br)
 API_URL = 'https://blaze.bet/api/singleplayer-originals/originals/roulette_games/recent/1'
 FUSO_BRASIL = timezone(timedelta(hours=-3))
 
@@ -96,6 +96,9 @@ def verificar_resultados():
     """Busca o último resultado da Blaze e processa se for novo."""
     global last_id_processed
     
+    # Adicionando sleep(5) para dar tempo de o Gunicorn iniciar
+    time.sleep(5) 
+    
     while True:
         try:
             print(f"THREAD: Tentando buscar API (Original /recent/1). last_id_processed: {last_id_processed}", file=sys.stderr)
@@ -147,7 +150,7 @@ def verificar_resultados():
             # Captura o erro 451 Unavailable For Legal Reasons
             print(f"THREAD ERRO: HTTPError ao buscar API: {e}", file=sys.stderr)
         except requests.exceptions.RequestException as e:
-            print(f"THREAD ERRO: RequestException (rede/timeout): {e}", file=sys.stderr)
+            print(f"THREAD ERRO: RequestException (rede/tempo limite): {e}", file=sys.stderr)
         except json.JSONDecodeError:
             print("THREAD ERRO: Erro ao decodificar JSON da API.", file=sys.stderr)
         except Exception as e:
@@ -238,12 +241,13 @@ def data():
 # =============================================================================
 # INICIALIZAÇÃO DA THREAD (MOVIDA PARA FORA DO if __name__)
 # =============================================================================
-daemon = threading.Thread(name='verificador_resultados',
-                          target=verificar_resultados,
-                          daemon=True)
+# AS LINHAS ABAIXO FORAM COMENTADAS PARA EVITAR O CRASH (ERRO 502) NA INICIALIZAÇÃO
+# daemon = threading.Thread(name='verificador_resultados',
+#                           target=verificar_resultados,
+#                           daemon=True)
 
-if not daemon.is_alive():
-    daemon.start()
+# if not daemon.is_alive():
+#     daemon.start()
 
 
 if __name__ == '__main__':
