@@ -7,42 +7,45 @@ import time
 import json
 from flask import Flask, render_template, jsonify
 
-# --- NOVO CÓDIGO DE SEGURANÇA (CORRIGIDO PARA MÚLTIPLOS USUÁRIOS E MASTER) ---
+# --- NOVO CÓDIGO DE SEGURANÇA (FINAL E COM DEBUG) ---
 import os
 from flask_httpauth import HTTPBasicAuth
 
 auth = HTTPBasicAuth()
 
 # 1. PEGA A SENHA COMPARTILHADA DO RENDER
-SHARED_PASSWORD = os.environ.get("APP_PASSWORD")
+# Se o Render falhar, usa uma senha de fallback temporária para debug.
+SHARED_PASSWORD = os.environ.get("APP_PASSWORD", "SENHA_NAO_LIDA_DO_RENDER")
 
-# 2. DEFINE O USUÁRIO MASTER (SEMPRE PERMITIDO)
+# 2. DEFINE O USUÁRIO MASTER (SEMPRE PERMITIDO) E A LISTA DE USUÁRIOS
 MASTER_USER = "adm"
+
+# Pega a lista do Render e adiciona o Master para garantir
+ALLOWED_USERS_STR = os.environ.get("ALLOWED_USERS", "").strip()
+# Cria a lista de usuários únicos, garantindo que o master (adm) esteja sempre presente
+ALLOWED_USERS_LIST = set([MASTER_USER] + [u.strip() for u in ALLOWED_USERS_STR.split(',') if u.strip()])
+
+# CRIA UM DICIONÁRIO ONDE TODOS OS USUÁRIOS TÊM A MESMA SENHA
 USERS = {
-    MASTER_USER: SHARED_PASSWORD # O login 'adm' sempre terá a senha do APP_PASSWORD
+    user: SHARED_PASSWORD
+    for user in ALLOWED_USERS_LIST
 }
 
-# 3. PEGA A LISTA DE USUÁRIOS PERMITIDOS (STRING COM VÍRGULAS)
-# Variável do Render esperada: 'ALLOWED_USERS' (ex: user01,user02,user03)
-ALLOWED_USERS_LIST = os.environ.get("ALLOWED_USERS", "").split(',')
-
-# 4. ADICIONA USUÁRIOS PERMITIDOS À LISTA
-if SHARED_PASSWORD:
-    for user in ALLOWED_USERS_LIST:
-        user = user.strip()
-        # Adiciona o usuário se for válido e diferente do Master
-        if user and user != MASTER_USER:
-            USERS[user] = SHARED_PASSWORD
+# --- LINHAS DE DEBUG CRUCIAIS (Visível nos logs do Render) ---
+print(f"DEBUG AUTH: Senha lida (APP_PASSWORD): {SHARED_PASSWORD}")
+print(f"DEBUG AUTH: Usuários carregados (ALLOWED_USERS): {list(USERS.keys())}")
+# --- FIM LINHAS DE DEBUG ---
 
 @auth.get_password
 def get_password(username):
-    # Retorna a senha associada ao nome de usuário (que será a senha compartilhada)
+    # Retorna a senha associada ao nome de usuário
+    # Se o username estiver na lista USERS, ele retorna o valor de SHARED_PASSWORD
     return USERS.get(username)
 # --- FIM DO CÓDIGO DE SEGURANÇA CORRIGIDO ---
 
 
 # =============================================================================
-# TODA A SUA LÓGICA DE ANÁLISE VAI AQUI (COPIADA DO ARQUIVO ORIGINAL)
+# TODA A SUA LÓGICA DE ANÁLISE VAI AQUI (CÓDIGO ORIGINAL CONTINUA ABAIXO)
 # =============================================================================
 
 # Fuso horário do Brasil (GMT-3)
@@ -105,7 +108,7 @@ class GerenciadorSinais:
             self.verificar_confluencia(minuto_chave)
     
     def get_nivel_confluencia(self, quantidade):
-        """Retorna o nível de confluência baseado na quantidade"""
+        """Retorna o nível de confluência baseada na quantidade"""
         if quantidade >= self.config_confluencia['alta']:
             return 'ALTA'
         elif quantidade >= self.config_confluencia['media']:
