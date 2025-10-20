@@ -1,5 +1,6 @@
 import sys
 import requests
+from requests.exceptions import Timeout, RequestException # Importação adicionada para tratamento de erros
 from datetime import datetime, timedelta, timezone
 from collections import deque, defaultdict
 import threading
@@ -14,7 +15,6 @@ auth = HTTPBasicAuth()
 
 # 1. PEGA A SENHA COMPARTILHADA DO RENDER
 # Se o Render falhar, usa uma senha de fallback temporária para debug.
-# NOTE: O Render leu sua senha como 'P@$1zero14x!' no último log.
 SHARED_PASSWORD = os.environ.get("APP_PASSWORD", "SENHA_NAO_LIDA_DO_RENDER")
 
 # 2. DEFINE O USUÁRIO MASTER (SEMPRE PERMITIDO) E A LISTA DE USUÁRIOS
@@ -80,7 +80,11 @@ class GerenciadorSinais:
         self.todas_estrategias = []  # Armazena TODAS as estratégias verificadas
         self.sinais_agrupados = defaultdict(list)  # Agrupa por horário
         self.sinais_ativos = []  # Sinais com confluência mínima
-        self.historico_finalizados = deque(maxlen=60)  # Histórico de sinais finalizados (máximo 60)
+        
+        # --- MODIFICAÇÃO SOLICITADA ---
+        # Histórico de sinais finalizados limitado aos últimos 20
+        self.historico_finalizados = deque(maxlen=20) 
+        
         self.estatisticas = EstatisticasEstrategias()
         self.estrategias_ativas = self.criar_estrategias_padrao()
         
@@ -282,12 +286,15 @@ class GerenciadorSinais:
                 agora <= s['janela_fim'] + timedelta(minutes=1)]
     
     def get_sinais_finalizados(self):
-        """Retorna sinais finalizados recentes (últimos 60)"""
+        """Retorna sinais finalizados recentes (últimos 20)"""
         return list(self.historico_finalizados)
 
 class AnalisadorEstrategiaHorarios:
     def __init__(self):
-        self.ultimas_rodadas = deque(maxlen=100)
+        # --- MODIFICAÇÃO SOLICITADA ---
+        # Removido o limite (maxlen=100) para manter todo o histórico de rodadas (rodadas ilimitadas)
+        self.ultimas_rodadas = deque(maxlen=None) 
+        
         self.gerenciador = GerenciadorSinais()
         self.ultimo_branco = None
         self.brancos_pendentes = []
@@ -652,13 +659,21 @@ def verificar_resultados_em_loop():
     """
     Esta função roda em uma thread separada, continuamente buscando
     novos resultados e atualizando nosso analisador_global.
+    Adicionado tratamento de erro robusto para evitar o 'travamento'.
     """
     global ultimo_id_global, ultimo_resultado_global
+    
+    # Tempo de espera padrão e tempo de espera após erro
+    INTERVALO_SUCESSO = 3 # Segundos
+    INTERVALO_ERRO = 15 # Segundos
 
     while True:
         try:
+            # Tenta buscar a API com um timeout para evitar que a thread trave
             headers = {'User-Agent': 'Mozilla/5.0'}
             response = requests.get(API_URL, headers=headers, timeout=10)
+            response.raise_for_status() # Lança HTTPError se o status code for 4xx ou 5xx
+            
             data = response.json()
 
             if data and data[0]['id'] != ultimo_id_global:
@@ -675,22 +690,37 @@ def verificar_resultados_em_loop():
                 analisador_global.adicionar_rodada(cor, numero, horario_real)
                 ultimas_10_rodadas_global.appendleft({"numero": numero, "cor": cor, "horario": horario_real.strftime('%H:%M')})
                 ultimo_resultado_global = {"numero": numero, "cor": cor, "horario": horario_real.strftime('%H:%M:%S')}
+                
+                # Sucesso: Espera o intervalo padrão
+                time.sleep(INTERVALO_SUCESSO)
 
+        except Timeout:
+            print(f"[{agora_brasil().strftime('%Y-%m-%d %H:%M:%S')}] ERRO: Timeout na requisição. Tentando novamente em {INTERVALO_ERRO} segundos.", file=sys.stderr)
+            time.sleep(INTERVALO_ERRO)
+        except RequestException as e:
+            # Captura erros de HTTP (4xx, 5xx) e outros erros de requisição
+            print(f"[{agora_brasil().strftime('%Y-%m-%d %H:%M:%S')}] ERRO: Falha na requisição da API: {e}. Tentando novamente em {INTERVALO_ERRO} segundos.", file=sys.stderr)
+            time.sleep(INTERVALO_ERRO)
+        except json.JSONDecodeError:
+            print(f"[{agora_brasil().strftime('%Y-%m-%d %H:%M:%S')}] ERRO: Falha ao decodificar JSON da API. Tentando novamente em {INTERVALO_ERRO} segundos.", file=sys.stderr)
+            time.sleep(INTERVALO_ERRO)
         except Exception as e:
-            pass # Ignora erros de busca
-        
-        time.sleep(3) # Espera 3 segundos
+            # Captura qualquer outro erro inesperado (a causa do travamento)
+            INTERVALO_ERRO_GRAVE = 30
+            print(f"[{agora_brasil().strftime('%Y-%m-%d %H:%M:%S')}] ERRO INESPERADO no loop de verificação: {e}. Tentando novamente em {INTERVALO_ERRO_GRAVE} segundos.", file=sys.stderr)
+            time.sleep(INTERVALO_ERRO_GRAVE)
 
 # --- Rotas do Site ---
 
 @app.route('/')
-@auth.login_required # <--- REQUER LOGIN PARA ACESSAR A INTERFACE
+@auth.login_required 
 def index():
     """ Rota principal que renderiza a nossa página HTML. """
+    # Assumindo que você tem um arquivo index.html na pasta 'templates'
     return render_template('index.html')
 
 @app.route('/data')
-@auth.login_required # <--- CORREÇÃO CRUCIAL: REQUER LOGIN PARA BUSCAR DADOS
+@auth.login_required 
 def get_data():
     """
     Esta rota é um 'API endpoint'. O JavaScript da página vai chamar
