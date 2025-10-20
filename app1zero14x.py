@@ -7,30 +7,35 @@ import time
 import json
 from flask import Flask, render_template, jsonify
 
-# --- NOVO CÓDIGO DE SEGURANÇA AQUI ---
+# --- CÓDIGO DE SEGURANÇA CORRIGIDO ---
 import os
 from flask_httpauth import HTTPBasicAuth
 
 auth = HTTPBasicAuth()
 
-# Pega a lista de usuários permitidos (separados por vírgula) da variável ALLOWED_USERS
-# Se a variável não existir, usa "admin" como padrão.
-ALLOWED_USERS_LIST = os.environ.get("ALLOWED_USERS", "admin").split(',')
-# Pega a senha compartilhada para todos os usuários
-SHARED_PASSWORD = os.environ.get("APP_PASSWORD") 
+# 1. PEGA A SENHA COMPARTILHADA DO RENDER
+SHARED_PASSWORD = os.environ.get("APP_PASSWORD")
+
+# 2. PEGA A LISTA DE USUÁRIOS PERMITIDOS (STRING COM VÍRGULAS)
+# Usa valor padrão "" caso a variável não exista
+ALLOWED_USERS_LIST = os.environ.get("ALLOWED_USERS", "").split(',')
+
+# CRIA UM DICIONÁRIO ONDE TODOS OS USUÁRIOS PERMITIDOS TÊM A MESMA SENHA COMPARTILHADA
+# Se as variáveis de ambiente não estiverem setadas, a lista USERS será vazia (seguro).
+USERS = {
+    u.strip(): SHARED_PASSWORD
+    for u in ALLOWED_USERS_LIST if u.strip() and SHARED_PASSWORD
+}
 
 @auth.get_password
 def get_password(username):
-    # 1. Verifica se o nome de usuário digitado é um usuário permitido (comparação insensível a maiúsculas/minúsculas)
-    if username.lower() in [u.lower() for u in ALLOWED_USERS_LIST]:
-        # 2. Se for permitido, retorna a senha compartilhada que o usuário deve usar
-        return SHARED_PASSWORD
-    return None
-# --- FIM DO NOVO CÓDIGO DE SEGURANÇA ---
+    # Se o username estiver na lista, retorna a senha compartilhada para que o Flask verifique
+    return USERS.get(username)
+# --- FIM DO CÓDIGO DE SEGURANÇA CORRIGIDO ---
 
 
 # =============================================================================
-# TODA A SUA LÓGICA DE ANÁLISE VAI AQUI (COPIADA DO ARQUIVO ORIGINAL)
+# TODA A SUA LÓGICA DE ANÁLISE VAI AQUI (CÓDIGO INALTERADO)
 # =============================================================================
 
 # Fuso horário do Brasil (GMT-3)
@@ -303,11 +308,12 @@ class AnalisadorEstrategiaHorarios:
             
             self.gerar_sinais_imediatos_apos_branco(horario_real, numero)
             self.verificar_dois_brancos_juntos(horario_real)
-            selfia_19_branco_minuto_duplo(horario_real)
+            self.estrategia_19_branco_minuto_duplo(horario_real)
             self.estrategia_dobra_branco(horario_real)
         else:
             self.contador_sem_branco += 1
-            self.processar_estrategias_posteriores(cor, numero, horario_real)
+            # Passando o argumento nomeado `horario_pedra`
+            self.processar_estrategias_posteriores(cor, numero, horario_pedra=horario_real) 
         
         self.verificar_30_sem_brancos(horario_real)
         self.verificar_50_sem_brancos(horario_real)
@@ -447,9 +453,9 @@ class AnalisadorEstrategiaHorarios:
 
     def calcular_minuto_destino_fixo(self, minuto_calculado):
         if minuto_calculado is None: return None
-        if minuto_calculado > 60: minuto_calculado -= 60
-        elif minuto_calculado < 1: minuto_calculado += 60
-        return minuto_calculado if 1 <= minuto_calculado <= 60 else None
+        destino = minuto_calculado % 60
+        if destino == 0: return 60
+        return destino if 1 <= destino <= 60 else None
 
     def processar_estrategias_posteriores(self, cor, numero, horario_pedra):
         if not self.brancos_pendentes: return
@@ -459,6 +465,7 @@ class AnalisadorEstrategiaHorarios:
             minuto_branco = horario_branco.minute
             hora_branco = horario_branco.hour
             
+            # Garante que a pedra atual é posterior ao branco (ou seja, foi jogada depois)
             if horario_pedra > horario_branco:
                 estrategias_posteriores = [
                     ("2. Pedra posterior + minuto",
@@ -481,6 +488,7 @@ class AnalisadorEstrategiaHorarios:
                     except Exception as e:
                         print(f"Erro na estratégia {nome}: {e}")
                 
+                # Se as estratégias posteriores foram processadas, remove o branco da lista pendente
                 brancos_processados.append(horario_branco)
         
         for branco in brancos_processados:
@@ -497,9 +505,13 @@ class AnalisadorEstrategiaHorarios:
         if minuto_destino is None: return None
         try:
             agora = agora_brasil()
+            # Cria um datetime no fuso horário local (FUSO_BRASIL)
             horario_destino = agora.replace(hour=hora_base, minute=minuto_destino, second=30, microsecond=0)
+            
+            # Garante que o horário de destino seja no futuro (corrigido para funcionar após a mudança de hora)
             while horario_destino <= agora:
                 horario_destino += timedelta(hours=1)
+                
             return horario_destino
         except:
             return None
@@ -524,11 +536,13 @@ class AnalisadorEstrategiaHorarios:
             
             if (ultima[1] == penultima[1] and ultima[2].replace(second=0) == penultima[2].replace(second=0)):
                 minuto_destino = horario.minute
+                # Lógica para +1h
                 horario_sinal = horario.replace(hour=horario.hour + 1, minute=minuto_destino, second=30)
                 if horario_sinal <= agora_brasil(): horario_sinal += timedelta(days=1)
                 if horario_sinal > agora_brasil():
                     self.gerenciador.adicionar_estrategia("14. 2 pedras iguais +1h", horario_sinal, minuto_destino, horario)
                 
+                # Lógica para +14min
                 minuto_destino_20 = (horario.minute + 14) % 60
                 if minuto_destino_20 == 0: minuto_destino_20 = 60
                 horario_sinal_20 = self.calcular_horario_destino(minuto_destino_20, horario.hour)
@@ -684,6 +698,15 @@ def verificar_resultados_em_loop():
         
         time.sleep(3) # Espera 3 segundos
 
+# --- INÍCIO DA THREAD (MOVENDO PARA FORA DO __main__ para GUNICORN) ---
+# Esta é a correção crítica para o erro 502 no Render/Gunicorn
+daemon = threading.Thread(name='verificador_resultados',
+                          target=verificar_resultados_em_loop,
+                          daemon=True)
+daemon.start()
+# --- FIM DA THREAD ---
+
+
 # --- Rotas do Site ---
 
 @app.route('/')
@@ -737,12 +760,6 @@ def get_data():
     return jsonify(data)
 
 if __name__ == '__main__':
-    # Inicia a thread que busca resultados em segundo plano
-    daemon = threading.Thread(name='verificador_resultados',
-                              target=verificar_resultados_em_loop,
-                              daemon=True)
-    daemon.start()
-
-    # Inicia o servidor web Flask
-    # O host='0.0.0.0' permite acesso de outros dispositivos na sua rede local
+    # Inicia o servidor web Flask APENAS PARA TESTE LOCAL
+    # No Render, Gunicorn faz este trabalho, por isso a thread foi movida para cima.
     app.run(host='0.0.0.0', port=5000, debug=False)
