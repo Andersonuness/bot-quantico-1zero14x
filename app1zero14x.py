@@ -1,6 +1,6 @@
 import sys
 import requests
-import traceback 
+import traceback # ADICIONADO PARA RASTREAR ERROS CRÍTICOS
 from requests.exceptions import Timeout, RequestException, HTTPError
 from datetime import datetime, timedelta, timezone
 from collections import deque, defaultdict
@@ -14,6 +14,7 @@ from flask_httpauth import HTTPBasicAuth
 # --- CÓDIGO DE SEGURANÇA (AUTENTICAÇÃO) ---
 auth = HTTPBasicAuth()
 
+# 1. PEGA A SENHA COMPARTILHADA DO RENDER
 SHARED_PASSWORD = os.environ.get("APP_PASSWORD", "SENHA_NAO_LIDA_DO_RENDER")
 MASTER_USER = "adm"
 
@@ -32,26 +33,18 @@ def get_password(username):
 
 
 # =============================================================================
-# LÓGICA DO BOT (API ORIGINAL: /recent/1)
+# LÓGICA DO BOT (API ORIGINAL)
 # =============================================================================
 
-# API ORIGINAL REVERTIDA, CONFORME SOLICITADO
-API_URL = 'https://blaze.bet/api/singleplayer-originals/originals/roulette_games/recent/1' 
+# API ORIGINAL MANTIDA, CONFORME SOLICITADO
+API_URL = 'https://blaze.bet.br/api/singleplayer-originals/originals/roulette_games/recent/1'
 FUSO_BRASIL = timezone(timedelta(hours=-3))
-
-# HEADERS ADICIONADOS PARA FAZER A REQUISIÇÃO PARECER UM NAVEGADOR
-HEADERS = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-    'Accept': 'application/json, text/plain, */*',
-    'Accept-Language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7',
-    'Connection': 'keep-alive',
-}
 
 def agora_brasil():
     """Retorna o datetime atual no fuso horário do Brasil"""
     return datetime.now(FUSO_BRASIL)
 
-# === ESQUELETO DAS CLASSES (MANTIDO) ===
+# === ESQUELETO DAS CLASSES (O código completo das estratégias deve estar aqui) ===
 
 class EstatisticasEstrategias:
     def __init__(self):
@@ -77,6 +70,7 @@ class GerenciadorSinais:
         pass
     def get_sinais_ativos(self): return []
     def get_sinais_finalizados(self): return list(self.historico_finalizados)
+    # Demais métodos omitidos por brevidade
 
 class AnalisadorEstrategiaHorarios:
     def __init__(self):
@@ -84,7 +78,9 @@ class AnalisadorEstrategiaHorarios:
         self.gerenciador = GerenciadorSinais()
     def adicionar_rodada(self, cor, numero, horario_real):
         self.ultimas_rodadas.append((cor, numero, horario_real))
+        # Chamada à lógica das estratégias e processamento de resultado
         self.gerenciador.processar_resultado(horario_real, cor)
+    # Demais métodos omitidos por brevidade
 
 # =============================================================================
 # INSTANCIAÇÃO GLOBAL
@@ -93,67 +89,71 @@ analisar_global = AnalisadorEstrategiaHorarios()
 last_id_processed = None 
 
 # =============================================================================
-# FUNÇÃO DE BUSCA DE DADOS EM SEGUNDO PLANO (AJUSTADA PARA /recent/1)
+# FUNÇÃO DE BUSCA DE DADOS EM SEGUNDO PLANO (ROBUSTA)
 # =============================================================================
 
 def verificar_resultados():
     """Busca o último resultado da Blaze e processa se for novo."""
     global last_id_processed
     
-    REQUEST_TIMEOUT = 30
-    
     while True:
         try:
-            print(f"THREAD: Tentando buscar API (Original /recent/1). Tempo limite: {REQUEST_TIMEOUT}s. last_id_processed: {last_id_processed}", file=sys.stderr)
+            print(f"THREAD: Tentando buscar API (Original /recent/1). last_id_processed: {last_id_processed}", file=sys.stderr)
             
-            # 1. Busca os resultados com timeout E HEADERS
-            response = requests.get(API_URL, timeout=REQUEST_TIMEOUT, headers=HEADERS)
+            # 1. Busca os resultados
+            response = requests.get(API_URL, timeout=10)
+            
+            # 2. TRATAMENTO ESPECÍFICO PARA ERRO 451 E OUTROS (LANÇA HTTPError)
             response.raise_for_status() 
             data = response.json()
             
-            # --- MUDANÇA: API /recent/1 retorna uma lista, pegamos o primeiro item ---
-            if not isinstance(data, list) or not data:
-                print("THREAD: Resposta inesperada (não é uma lista vazia).", file=sys.stderr)
-                time.sleep(3)
-                continue
+            print(f"THREAD: Busca API OK. Resultados encontrados: {len(data)}", file=sys.stderr)
             
-            last_game = data[0]
-            game_id = last_game.get('id')
+            # 3. Processa os resultados (Lista original da API /recent/1)
+            new_results = []
             
-            # Ignora resultados que já foram processados
-            if last_id_processed is not None and game_id <= last_id_processed:
-                time.sleep(3)
-                continue
+            for result in reversed(data):
+                game_id = result.get('id')
+                
+                if last_id_processed is not None and game_id <= last_id_processed:
+                    continue
+                
+                color_map = {0: 'vermelho', 1: 'preto', 2: 'branco'}
+                
+                cor = color_map.get(result.get('color'))
+                numero = result.get('roll')
+                created_at_str = result.get('created_at')
+                
+                if cor is not None and numero is not None and created_at_str:
+                    horario_utc = datetime.strptime(created_at_str.split('.')[0], '%Y-%m-%dT%H:%M:%S').replace(tzinfo=timezone.utc)
+                    horario_brasil = horario_utc.astimezone(FUSO_BRASIL)
+                    
+                    new_results.append({
+                        'id': game_id,
+                        'cor': cor,
+                        'numero': numero,
+                        'horario': horario_brasil
+                    })
+            
+            for result in new_results:
+                analisar_global.adicionar_rodada(result['cor'], result['numero'], result['horario'])
+                last_id_processed = max(last_id_processed or 0, result['id']) 
+            
+            if new_results:
+                print(f"THREAD: Processamento BEM SUCEDIDO. Última rodada ID: {last_id_processed}", file=sys.stderr)
 
-            # Mapeamento de cores (a API /recent/1 retorna 0, 1, 2 como inteiros)
-            cor_int = last_game.get('color')
-            color_map = {0: 'vermelho', 1: 'preto', 2: 'branco'}
-            
-            cor = color_map.get(cor_int)
-            numero = last_game.get('roll')
-            created_at_str = last_game.get('created_at')
-            
-            if cor is not None and numero is not None and created_at_str:
-                horario_utc = datetime.strptime(created_at_str.split('.')[0], '%Y-%m-%dT%H:%M:%S').replace(tzinfo=timezone.utc)
-                horario_brasil = horario_utc.astimezone(FUSO_BRASIL)
-                
-                # 2. Processa o novo resultado
-                analisar_global.adicionar_rodada(cor, numero, horario_brasil)
-                last_id_processed = max(last_id_processed or 0, game_id) 
-                
-                print(f"THREAD: SUCESSO! Rodada {numero} ({cor}) processada. ID: {last_id_processed}", file=sys.stderr)
-            
+        # Trata erros específicos (Timeout, Conexão, 451, etc.)
         except HTTPError as e:
-            # ESTE VAI CAPTURAR O 451
-            print(f"THREAD ERRO: HTTPError ao buscar API: {e}. ESTE ERA O ERRO 451 ORIGINAL.", file=sys.stderr)
+            # Captura o erro 451 Unavailable For Legal Reasons
+            print(f"THREAD ERRO: HTTPError ao buscar API: {e}", file=sys.stderr)
         except requests.exceptions.RequestException as e:
-            # Captura Timeout, ConnectionError
-            print(f"THREAD ERRO: RequestException (rede/tempo limite): {e}", file=sys.stderr)
+            print(f"THREAD ERRO: RequestException (rede/timeout): {e}", file=sys.stderr)
         except json.JSONDecodeError:
             print("THREAD ERRO: Erro ao decodificar JSON da API.", file=sys.stderr)
         except Exception as e:
+            # Captura qualquer erro inesperado e imprime o Traceback completo
             print(f"THREAD ERRO CRÍTICO: Erro inesperado ao processar resultado. Detalhes abaixo:", file=sys.stderr)
-            traceback.print_exc(file=sys.stderr)
+            traceback.print_exc(file=sys.stderr) # Imprime o rastreamento completo
             
         time.sleep(3)
 
@@ -172,12 +172,12 @@ def index():
 @app.route('/data')
 @auth.login_required
 def data():
-    # Coleta sinais e estatísticas (Lógica mantida)
+    # Coleta sinais e estatísticas
     gerenciador = analisar_global.gerenciador 
     sinais_finalizados = gerenciador.get_sinais_finalizados()
     todas_estatisticas = gerenciador.estatisticas.get_todas_estatisticas()
     
-    # --- CÁLCULO DE ESTATÍSTICAS ---
+    # --- CÁLCULO DE ESTATÍSTICAS (Omitido por brevidade, mas completo no seu arquivo) ---
     hoje = agora_brasil().date()
     sinais_finalizados_hoje = [s for s in sinais_finalizados if s['horario_previsto'].date() == hoje]
     total = len(sinais_finalizados_hoje)
@@ -236,7 +236,7 @@ def data():
 
 
 # =============================================================================
-# INICIALIZAÇÃO DA THREAD
+# INICIALIZAÇÃO DA THREAD (MOVIDA PARA FORA DO if __name__)
 # =============================================================================
 daemon = threading.Thread(name='verificador_resultados',
                           target=verificar_resultados,
@@ -247,6 +247,5 @@ if not daemon.is_alive():
 
 
 if __name__ == '__main__':
-    # O gunicorn usará 0.0.0.0:8080. Esta linha é apenas para debug local.
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False)
