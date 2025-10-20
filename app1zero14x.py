@@ -36,7 +36,7 @@ def get_password(username):
 # LÓGICA DO BOT (API ORIGINAL)
 # =============================================================================
 
-# CORRIGIDO: Removido o ".br" da URL que estava causando a falha de inicialização (crash).
+# CORREÇÃO CRÍTICA APLICADA: Removido o ".br" que causava o crash (502).
 API_URL = 'https://blaze.bet/api/singleplayer-originals/originals/roulette_games/recent/1'
 FUSO_BRASIL = timezone(timedelta(hours=-3))
 
@@ -101,7 +101,6 @@ def verificar_resultados():
             print(f"THREAD: Tentando buscar API (Original /recent/1). last_id_processed: {last_id_processed}", file=sys.stderr)
             
             # 1. Busca os resultados
-            # Timeout ajustado para 10s (anteriormente era 30s)
             response = requests.get(API_URL, timeout=10) 
             
             # 2. TRATAMENTO ESPECÍFICO PARA ERRO 451 E OUTROS (LANÇA HTTPError)
