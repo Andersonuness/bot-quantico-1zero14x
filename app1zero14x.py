@@ -36,8 +36,8 @@ def get_password(username):
 # LÓGICA DO BOT (API ORIGINAL)
 # =============================================================================
 
-# API ORIGINAL MANTIDA, CONFORME SOLICITADO
-API_URL = 'https://blaze.bet.br/api/singleplayer-originals/originals/roulette_games/recent/1'
+# CORRIGIDO: Removido o ".br" da URL que estava causando a falha de inicialização.
+API_URL = 'https://blaze.bet/api/singleplayer-originals/originals/roulette_games/recent/1'
 FUSO_BRASIL = timezone(timedelta(hours=-3))
 
 def agora_brasil():
