@@ -7,6 +7,26 @@ import time
 import json
 from flask import Flask, render_template, jsonify
 
+# --- NOVO CÓDIGO DE SEGURANÇA AQUI ---
+import os
+from flask_httpauth import HTTPBasicAuth
+
+auth = HTTPBasicAuth()
+
+# O Render irá injetar a senha na variável de ambiente 'APP_PASSWORD'
+USERS = {
+    "admin": os.environ.get("APP_PASSWORD") # Usuário: "admin", Senha: A que você definir no Render
+}
+
+@auth.get_password
+def get_password(username):
+    if username in USERS:
+        # Retorna a senha associada ao nome de usuário (que será lida do Render)
+        return USERS.get(username)
+    return None
+# --- FIM DO NOVO CÓDIGO DE SEGURANÇA ---
+
+
 # =============================================================================
 # TODA A SUA LÓGICA DE ANÁLISE VAI AQUI (COPIADA DO ARQUIVO ORIGINAL)
 # =============================================================================
@@ -281,7 +301,7 @@ class AnalisadorEstrategiaHorarios:
             
             self.gerar_sinais_imediatos_apos_branco(horario_real, numero)
             self.verificar_dois_brancos_juntos(horario_real)
-            self.estrategia_19_branco_minuto_duplo(horario_real)
+            selfia_19_branco_minuto_duplo(horario_real)
             self.estrategia_dobra_branco(horario_real)
         else:
             self.contador_sem_branco += 1
@@ -665,6 +685,7 @@ def verificar_resultados_em_loop():
 # --- Rotas do Site ---
 
 @app.route('/')
+@auth.login_required # <--- AGORA ESTA ROTA EXIGE LOGIN!
 def index():
     """ Rota principal que renderiza a nossa página HTML. """
     return render_template('index.html')
