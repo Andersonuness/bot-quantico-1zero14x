@@ -7,7 +7,7 @@ import time
 import json
 from flask import Flask, render_template, jsonify
 
-# --- NOVO CÓDIGO DE SEGURANÇA (FINAL E COM DEBUG) ---
+# --- NOVO CÓDIGO DE SEGURANÇA (FINAL E COM DEBUG FORÇADO) ---
 import os
 from flask_httpauth import HTTPBasicAuth
 
@@ -16,6 +16,12 @@ auth = HTTPBasicAuth()
 # 1. PEGA A SENHA COMPARTILHADA DO RENDER
 # Se o Render falhar, usa uma senha de fallback temporária para debug.
 SHARED_PASSWORD = os.environ.get("APP_PASSWORD", "SENHA_NAO_LIDA_DO_RENDER")
+
+# --- LINHAS DE DEBUG CRUCIAIS (MOVIDAS PARA O TOPO) ---
+# ISSO DEVE APARECER NO INÍCIO DOS LOGS DO RENDER.
+print(f"DEBUG AUTH: Senha lida (APP_PASSWORD): '{SHARED_PASSWORD}'") 
+# --- FIM LINHAS DE DEBUG ---
+
 
 # 2. DEFINE O USUÁRIO MASTER (SEMPRE PERMITIDO) E A LISTA DE USUÁRIOS
 MASTER_USER = "adm"
@@ -31,25 +37,26 @@ USERS = {
     for user in ALLOWED_USERS_LIST
 }
 
-# --- LINHAS DE DEBUG CRUCIAIS (Visível nos logs do Render) ---
-print(f"DEBUG AUTH: Senha lida (APP_PASSWORD): {SHARED_PASSWORD}")
 print(f"DEBUG AUTH: Usuários carregados (ALLOWED_USERS): {list(USERS.keys())}")
-# --- FIM LINHAS DE DEBUG ---
+
 
 @auth.get_password
 def get_password(username):
     # Retorna a senha associada ao nome de usuário
-    # Se o username estiver na lista USERS, ele retorna o valor de SHARED_PASSWORD
     return USERS.get(username)
 # --- FIM DO CÓDIGO DE SEGURANÇA CORRIGIDO ---
 
 
 # =============================================================================
-# TODA A SUA LÓGICA DE ANÁLISE VAI AQUI (CÓDIGO ORIGINAL CONTINUA ABAIXO)
+# O RESTO DO SEU CÓDIGO DE ANÁLISE CONTINUA ABAIXO
 # =============================================================================
 
 # Fuso horário do Brasil (GMT-3)
 FUSO_BRASIL = timezone(timedelta(hours=-3))
+
+# ... (Todo o resto do código, das classes EstatisticasEstrategias, GerenciadorSinais,
+# AnalisadorEstrategiaHorarios, e as rotas / e /data, deve vir aqui,
+# idêntico ao que eu te mandei na resposta anterior). ...
 
 def agora_brasil():
     """Retorna o datetime atual no fuso horário do Brasil"""
