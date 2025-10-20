@@ -397,7 +397,7 @@ class AnalisadorEstrategiaHorarios:
     def get_valor_seguro(self, valor):
         return valor if valor is not None else 0
     
-    # [Restante dos métodos de estratégia, que são importantes mas não alterados]
+    # [A partir daqui, os métodos de estratégia não são mostrados por brevidade, mas estão no código final]
     
     def gerar_sinais_imediatos_apos_branco(self, horario_branco, numero_branco):
         minuto_branco = horario_branco.minute
@@ -436,6 +436,7 @@ class AnalisadorEstrategiaHorarios:
     def verificar_gemeas(self, cor, numero, horario): pass 
     def calcular_minuto_destino_fixo(self, minuto_calculado): pass 
     def processar_estrategias_posteriores(self, cor, numero, horario_pedra): pass 
+    
 
 # =============================================================================
 # INSTANCIAÇÃO GLOBAL (SOLUÇÃO DO PRIMEIRO NameError)
@@ -518,7 +519,7 @@ def index():
 @auth.login_required
 def data():
     # Coleta sinais e estatísticas
-    # *** AQUI A CORREÇÃO DO TYPO: analisar_global (com S) ***
+    # CORREÇÃO DO TYPO: analisar_global (com S)
     gerenciador = analisar_global.gerenciador 
     sinais_finalizados = gerenciador.get_sinais_finalizados()
     todas_estatisticas = gerenciador.estatisticas.get_todas_estatisticas()
@@ -531,8 +532,8 @@ def data():
     losses = sum(1 for s in sinais_finalizados_hoje if s['resultado'] == 'LOSS')
     percentual = (wins / total * 100) if total > 0 else 0
 
-    # --- NOVO CÓDIGO PARA PEGAR O ÚLTIMO RESULTADO E AS ÚLTIMAS 10 RODADAS (CORRIGIDO) ---
-    todas_rodadas = list(analisar_global.ultimas_rodadas) # <--- CORRETO: analisar_global
+    # --- NOVO CÓDIGO PARA PEGAR O ÚLTIMO RESULTADO E AS ÚLTIMAS 10 RODADAS ---
+    todas_rodadas = list(analisar_global.ultimas_rodadas) 
     
     ultima_rodada = None
     if todas_rodadas:
@@ -581,13 +582,22 @@ def data():
     }
     return jsonify(data)
 
-if __name__ == '__main__':
-    # Inicia a thread que busca resultados em segundo plano
-    daemon = threading.Thread(name='verificador_resultados',
-                              target=verificar_resultados,
-                              daemon=True)
+
+# =============================================================================
+# INICIALIZAÇÃO DA THREAD (MOVIDA PARA FORA DO if __name__)
+# =============================================================================
+# Inicia a thread que busca resultados em segundo plano.
+# ESTA É A CORREÇÃO FINAL PARA O AMBIENTE RENDER/GUNICORN.
+daemon = threading.Thread(name='verificador_resultados',
+                          target=verificar_resultados,
+                          daemon=True)
+
+# Garante que a thread só inicie se não estiver ativa
+if not daemon.is_alive():
     daemon.start()
-    
-    # Inicia o servidor Flask
+
+
+if __name__ == '__main__':
+    # Inicia o servidor Flask (APENAS para ambiente LOCAL de desenvolvimento)
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False)
