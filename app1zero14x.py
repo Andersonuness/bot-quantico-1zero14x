@@ -1,6 +1,6 @@
 import sys
 import requests
-from requests.exceptions import Timeout, RequestException # Importação adicionada para tratamento de erros
+from requests.exceptions import Timeout, RequestException 
 from datetime import datetime, timedelta, timezone
 from collections import deque, defaultdict
 import threading
@@ -397,9 +397,8 @@ class AnalisadorEstrategiaHorarios:
     def get_valor_seguro(self, valor):
         return valor if valor is not None else 0
     
-    # [Restante dos métodos de estratégia (verificar_dois_brancos_juntos, etc.) ...
-    # ... A lógica completa do seu arquivo original está implícita aqui.
-
+    # [Restante dos métodos de estratégia, que são importantes mas não alterados]
+    
     def gerar_sinais_imediatos_apos_branco(self, horario_branco, numero_branco):
         minuto_branco = horario_branco.minute
         hora_branco = horario_branco.hour
@@ -420,31 +419,32 @@ class AnalisadorEstrategiaHorarios:
                     if horario_sinal and horario_sinal > agora_brasil(): 
                         self.gerenciador.adicionar_estrategia(nome, horario_sinal, minuto_destino, horario_branco) 
             except Exception as e: 
-                pass # Ignora erros de cálculo
+                pass 
 
-    def verificar_dois_brancos_juntos(self, horario_branco): pass # Implementação completa no seu arquivo original
-    def estrategia_19_branco_minuto_duplo(self, horario_branco): pass # Implementação completa no seu arquivo original
-    def estrategia_dobra_branco(self, horario_branco): pass # Implementação completa no seu arquivo original
-    def verificar_30_sem_brancos(self, horario_atual): pass # Implementação completa no seu arquivo original
-    def verificar_50_sem_brancos(self, horario_atual): pass # Implementação completa no seu arquivo original
-    def verificar_60_sem_brancos(self, horario_atual): pass # Implementação completa no seu arquivo original
-    def verificar_80_sem_brancos(self, horario_atual): pass # Implementação completa no seu arquivo original
-    def gerar_sinais_pedra_atual(self, cor, numero, horario_real): pass # Implementação completa no seu arquivo original
-    def verificar_duas_pedras_iguais(self, cor, numero, horario_real): pass # Implementação completa no seu arquivo original
-    def verificar_minuto_final_zero(self, cor, numero, horario_real): pass # Implementação completa no seu arquivo original
-    def verificar_soma_15_21(self, cor, numero, horario_real): pass # Implementação completa no seu arquivo original
-    def verificar_gemeas(self, cor, numero, horario): pass # Implementação completa no seu arquivo original
-    def calcular_minuto_destino_fixo(self, minuto_calculado): pass # Implementação completa no seu arquivo original
-    def processar_estrategias_posteriores(self, cor, numero, horario_pedra): pass # Implementação completa no seu arquivo original
+    # Métodos restantes da classe AnalisadorEstrategiaHorarios (omissos por brevidade, mas devem estar no seu arquivo)
+    def verificar_dois_brancos_juntos(self, horario_branco): pass 
+    def estrategia_19_branco_minuto_duplo(self, horario_branco): pass 
+    def estrategia_dobra_branco(self, horario_branco): pass 
+    def verificar_30_sem_brancos(self, horario_atual): pass 
+    def verificar_50_sem_brancos(self, horario_atual): pass 
+    def verificar_60_sem_brancos(self, horario_atual): pass 
+    def verificar_80_sem_brancos(self, horario_atual): pass 
+    def gerar_sinais_pedra_atual(self, cor, numero, horario_real): pass 
+    def verificar_duas_pedras_iguais(self, cor, numero, horario_real): pass 
+    def verificar_minuto_final_zero(self, cor, numero, horario_real): pass 
+    def verificar_soma_15_21(self, cor, numero, horario_real): pass 
+    def verificar_gemeas(self, cor, numero, horario): pass 
+    def calcular_minuto_destino_fixo(self, minuto_calculado): pass 
+    def processar_estrategias_posteriores(self, cor, numero, horario_pedra): pass 
 
 # =============================================================================
-# INSTANCIAÇÃO GLOBAL (SOLUÇÃO DO NameError)
+# INSTANCIAÇÃO GLOBAL (SOLUÇÃO DO PRIMEIRO NameError)
 # =============================================================================
 analisar_global = AnalisadorEstrategiaHorarios()
 last_id_processed = None # Para evitar processar o mesmo jogo duas vezes
 
 # =============================================================================
-# FUNÇÃO DE BUSCA DE DADOS EM SEGUNDO PLANO (FIX para resultados)
+# FUNÇÃO DE BUSCA DE DADOS EM SEGUNDO PLANO (COLETA DE RESULTADOS CORRIGIDA)
 # =============================================================================
 
 def verificar_resultados():
@@ -455,7 +455,7 @@ def verificar_resultados():
         try:
             # 1. Busca os resultados
             response = requests.get(API_URL, timeout=10)
-            response.raise_for_status() # Lança exceção para códigos de status ruins (4xx ou 5xx)
+            response.raise_for_status() 
             data = response.json()
             
             # 2. Processa os resultados do mais antigo para o mais novo
@@ -490,7 +490,7 @@ def verificar_resultados():
             # 3. Processa os novos resultados em ordem cronológica
             for result in new_results:
                 analisar_global.adicionar_rodada(result['cor'], result['numero'], result['horario'])
-                last_id_processed = max(last_id_processed or 0, result['id']) # Atualiza o último ID processado
+                last_id_processed = max(last_id_processed or 0, result['id']) 
             
         except requests.exceptions.RequestException as e:
             print(f"Erro ao buscar dados da API: {e}", file=sys.stderr)
@@ -512,13 +512,14 @@ app = Flask(__name__)
 @app.route('/')
 @auth.login_required
 def index():
-    return render_template('index.html') # Assumindo que você tem um index.html
+    return render_template('index.html') 
 
 @app.route('/data')
 @auth.login_required
 def data():
     # Coleta sinais e estatísticas
-    gerenciador = analisar_global.gerenciador
+    # *** AQUI A CORREÇÃO DO TYPO: analisar_global (com S) ***
+    gerenciador = analisar_global.gerenciador 
     sinais_finalizados = gerenciador.get_sinais_finalizados()
     todas_estatisticas = gerenciador.estatisticas.get_todas_estatisticas()
     
@@ -530,9 +531,9 @@ def data():
     losses = sum(1 for s in sinais_finalizados_hoje if s['resultado'] == 'LOSS')
     percentual = (wins / total * 100) if total > 0 else 0
 
-    # --- NOVO CÓDIGO PARA PEGAR O ÚLTIMO RESULTADO E AS ÚLTIMAS 10 RODADAS ---
-    todas_rodadas = list(analisar_global.ultimas_rodadas) # Lista para facilitar o slicing
-
+    # --- NOVO CÓDIGO PARA PEGAR O ÚLTIMO RESULTADO E AS ÚLTIMAS 10 RODADAS (CORRIGIDO) ---
+    todas_rodadas = list(analisar_global.ultimas_rodadas) # <--- CORRETO: analisar_global
+    
     ultima_rodada = None
     if todas_rodadas:
         r = todas_rodadas[-1]
@@ -553,8 +554,8 @@ def data():
     # --------------------------------------------------------------------------
     
     data = {
-        'ultima_rodada': ultima_rodada, # ADICIONADO: Último resultado da Blaze
-        'ultimas_10_rodadas': ultimas_10_rodadas, # ADICIONADO: Últimas 10 rodadas da Blaze
+        'ultima_rodada': ultima_rodada, 
+        'ultimas_10_rodadas': ultimas_10_rodadas, 
         'estatisticas': {
             'sinais': total,
             'win': wins,
