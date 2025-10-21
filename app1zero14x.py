@@ -36,7 +36,7 @@ def get_password(username):
 # LÓGICA DO BOT (API ORIGINAL)
 # =============================================================================
 
-# CORREÇÃO CRÍTICA FINAL: URL sem o ".br" para evitar crash.
+# CORREÇÃO CRÍTICA: URL sem o ".br"
 API_URL = 'https://blaze.bet/api/singleplayer-originals/originals/roulette_games/recent/1'
 FUSO_BRASIL = timezone(timedelta(hours=-3))
 
@@ -44,7 +44,7 @@ def agora_brasil():
     """Retorna o datetime atual no fuso horário do Brasil"""
     return datetime.now(FUSO_BRASIL)
 
-# === ESQUELETO DAS CLASSES ===
+# === ESQUELETO DAS CLASSES (O código completo das estratégias deve estar aqui) ===
 
 class EstatisticasEstrategias:
     def __init__(self):
@@ -242,11 +242,17 @@ def data():
 
 
 # =============================================================================
-# INICIALIZAÇÃO DA THREAD (DESATIVADA)
+# INICIALIZAÇÃO DA THREAD (REATIVADA)
 # =============================================================================
-# Continua desativada, pois a thread de busca da API causava o crash inicial.
+# Esta thread é reativada para buscar os dados da API.
+daemon = threading.Thread(name='verificador_resultados',
+                          target=verificar_resultados,
+                          daemon=True)
+
+if not daemon.is_alive():
+    daemon.start()
+
 
 if __name__ == '__main__':
-    # Define a porta usando a variável de ambiente $PORT ou 5000 como fallback
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False)
