@@ -164,6 +164,12 @@ def verificar_resultados():
 
 app = Flask(__name__)
 
+# ROTA CRÍTICA PARA O HEALTH CHECK DO RENDER/RAILWAY (SEM AUTENTICAÇÃO)
+@app.route('/health')
+def health_check():
+    """Permite que o serviço de hospedagem verifique se o app está vivo."""
+    return 'OK', 200
+
 @app.route('/')
 @auth.login_required
 def index():
@@ -236,17 +242,11 @@ def data():
 
 
 # =============================================================================
-# INICIALIZAÇÃO DA THREAD (DESATIVADA PARA EVITAR O ERRO 502)
+# INICIALIZAÇÃO DA THREAD (DESATIVADA)
 # =============================================================================
-# ESTE BLOCO ESTÁ COMENTADO PARA IMPEDIR QUE A THREAD TRAVE O SERVIDOR NO INÍCIO.
-# daemon = threading.Thread(name='verificador_resultados',
-#                           target=verificar_resultados,
-#                           daemon=True)
-
-# if not daemon.is_alive():
-#     daemon.start()
-
+# Continua desativada, pois a thread de busca da API causava o crash inicial.
 
 if __name__ == '__main__':
+    # Define a porta usando a variável de ambiente $PORT ou 5000 como fallback
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False)
