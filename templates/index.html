@@ -1,1621 +1,321 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>1ZERO14X QUÂNTICO WEB - Sistema de Sinais</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        :root {
-            --primary: #f7931a; /* Laranja Hunter White */
-            --primary-dark: #d97e17;
-            --secondary: #1a1a1a;
-            --accent: #ff3b30; /* Vermelho Hunter White */
-            --success: #4cd964;
-            --warning: #ffcc00;
-            --text: #ffffff;
-            --text-secondary: #b3b3b3;
-            --bg-dark: #0a0a0a;
-            --bg-card: #1a1a1a;
-            --border: #333333;
-
-            /* Cores 1ZERO14X adicionadas para o login */
-            --vermelho-1z: #e50914;
-            --dourado-1z: #ffd700;
-            --cinza-1z: #2c2c2c;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-
-        body {
-            background-color: var(--bg-dark);
-            color: var(--text);
-            overflow-x: hidden;
-            background-image: 
-                radial-gradient(circle at 10% 20%, rgba(247, 147, 26, 0.05) 0%, transparent 20%),
-                radial-gradient(circle at 90% 80%, rgba(255, 59, 48, 0.05) 0%, transparent 20%);
-        }
-
-        /* ==================== LOGIN 1ZERO14X CSS ==================== */
-        #login-overlay {
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            flex-direction: column;
-            text-align: center;
-            background: linear-gradient(135deg, #000 0%, #1a1a1a 100%);
-            background-size: 200% 200%;
-            animation: moverFundo 6s infinite alternate;
-            z-index: 9999;
-        }
-
-        @keyframes moverFundo {
-            0% { background-position: left top; }
-            100% { background-position: right bottom; }
-        }
-
-        #login-overlay h1 {
-            color: var(--dourado-1z);
-            font-size: 2.5rem;
-            margin-bottom: 0.5rem;
-            letter-spacing: 2px;
-            text-shadow: 0 0 15px var(--dourado-1z);
-            animation: brilho 2s infinite alternate;
-        }
-
-        @keyframes brilho {
-            from { text-shadow: 0 0 15px var(--dourado-1z); }
-            to { text-shadow: 0 0 30px var(--vermelho-1z); }
-        }
-
-        #login-overlay h2 {
-            color: #ccc;
-            font-weight: normal;
-            margin-bottom: 1.5rem;
-        }
-
-        #login-overlay input {
-            width: 280px;
-            padding: 0.9rem;
-            border-radius: 8px;
-            border: 1px solid var(--cinza-1z);
-            background-color: var(--card);
-            color: var(--text);
-            font-size: 1rem;
-            text-align: center;
-            margin-top: 0.6rem;
-            transition: 0.3s;
-        }
-
-        #login-overlay input:focus {
-            border-color: var(--dourado-1z);
-            outline: none;
-            box-shadow: 0 0 10px var(--dourado-1z);
-        }
-
-        .senha-container {
-            position: relative;
-            display: inline-block;
-        }
-
-        .toggle-senha {
-            position: absolute;
-            top: 50%;
-            right: 12px;
-            transform: translateY(-50%);
-            cursor: pointer;
-            color: var(--dourado-1z);
-            font-size: 0.9rem;
-            user-select: none;
-        }
-
-        #login-overlay button {
-            margin-top: 1.5rem;
-            background: linear-gradient(90deg, var(--vermelho-1z), #ff1e28);
-            border: none;
-            color: white;
-            padding: 0.9rem 1.4rem;
-            border-radius: 8px;
-            font-weight: bold;
-            cursor: pointer;
-            width: 280px;
-            font-size: 1.1rem;
-            letter-spacing: 1px;
-            box-shadow: 0 0 15px rgba(229,9,20,0.5);
-            transition: 0.3s ease;
-        }
-
-        #login-overlay button:hover {
-            transform: scale(1.05);
-            box-shadow: 0 0 30px rgba(229,9,20,0.8);
-        }
-
-        #erro-login {
-            color: #ff4d4d;
-            margin-top: 10px;
-            display: none;
-            font-weight: bold;
-        }
-        /* ==================== FIM LOGIN 1ZERO14X CSS ==================== */
-
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-
-        header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 20px 0;
-            border-bottom: 1px solid var(--border);
-            margin-bottom: 30px;
-        }
-
-        .logo {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-
-        .logo-icon {
-            font-size: 2.5rem;
-            color: var(--primary);
-        }
-
-        .logo-text {
-            font-size: 1.8rem;
-            font-weight: 700;
-            background: linear-gradient(to right, var(--primary), var(--accent));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-        
-        /* O restante do CSS do Hunter White continua aqui... */
-        .status {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            background-color: var(--bg-card);
-            padding: 10px 20px;
-            border-radius: 50px;
-            border: 1px solid var(--border);
-        }
-
-        .status-dot {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            background-color: var(--success);
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0% { opacity: 1; }
-            50% { opacity: 0.5; }
-            100% { opacity: 1; }
-        }
-
-        .dashboard {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-
-        @media (max-width: 768px) {
-            .dashboard {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        .card {
-            background-color: var(--bg-card);
-            border-radius: 15px;
-            padding: 25px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-            border: 1px solid var(--border);
-            transition: transform 0.3s, box-shadow 0.3s;
-        }
-
-        .card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
-        }
-
-        .card-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            padding-bottom: 15px;
-            border-bottom: 1px solid var(--border);
-        }
-
-        .card-title {
-            font-size: 1.3rem;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .card-title i {
-            color: var(--primary);
-        }
-
-        .stats {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-        }
-
-        .stat-item {
-            text-align: center;
-            padding: 15px;
-            background-color: rgba(255, 255, 255, 0.05);
-            border-radius: 10px;
-        }
-
-        .stat-value {
-            font-size: 2rem;
-            font-weight: 700;
-            margin-bottom: 5px;
-        }
-
-        .stat-label {
-            font-size: 0.9rem;
-            color: var(--text-secondary);
-        }
-
-        .win {
-            color: var(--success);
-        }
-
-        .loss {
-            color: var(--accent);
-        }
-
-        .sinais-container {
-            margin-top: 30px;
-        }
-
-        .sinais-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-
-        .section-title {
-            font-size: 1.5rem;
-            font-weight: 700;
-        }
-
-        .sinais-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-            gap: 20px;
-        }
-
-        .sinal-card {
-            background-color: var(--bg-card);
-            border-radius: 15px;
-            padding: 20px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-            border: 1px solid var(--border);
-            transition: all 0.3s;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .sinal-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
-        }
-
-        .sinal-card.ativo {
-            border-left: 5px solid var(--primary);
-        }
-
-        .sinal-card.finalizado.win {
-            border-left: 5px solid var(--success);
-        }
-
-        .sinal-card.finalizado.loss {
-            border-left: 5px solid var(--accent);
-        }
-
-        .sinal-status {
-            position: absolute;
-            top: 15px;
-            right: 15px;
-            padding: 5px 10px;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: 600;
-        }
-
-        .ativo .sinal-status {
-            background-color: rgba(247, 147, 26, 0.2);
-            color: var(--primary);
-        }
-
-        .win .sinal-status {
-            background-color: rgba(76, 217, 100, 0.2);
-            color: var(--success);
-        }
-
-        .loss .sinal-status {
-            background-color: rgba(255, 59, 48, 0.2);
-            color: var(--accent);
-        }
-
-        .sinal-horario {
-            font-size: 1.8rem;
-            font-weight: 700;
-            margin-bottom: 10px;
-        }
-
-        .sinal-details {
-            margin-bottom: 15px;
-        }
-
-        .sinal-detail {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 8px;
-            font-size: 0.9rem;
-        }
-
-        .sinal-detail-label {
-            color: var(--text-secondary);
-        }
-
-        .estrategias-list {
-            margin-top: 15px;
-        }
-
-        .estrategias-secretas {
-            background: linear-gradient(45deg, #ff0000, #ff8000, #ffff00, #00ff00, #0000ff, #8000ff);
-            background-size: 600% 600%;
-            animation: gradientShift 3s ease infinite;
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            font-weight: bold;
-            text-align: center;
-            padding: 10px;
-            border-radius: 10px;
-            margin-top: 10px;
-            border: 1px solid var(--primary);
-        }
-
-        @keyframes gradientShift {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
-
-        .fire-animation {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: -1;
-            opacity: 0.1;
-        }
-
-        .fire {
-            position: absolute;
-            bottom: 0;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 150px;
-            height: 150px;
-            background: radial-gradient(ellipse at center, rgba(247, 147, 26, 0.8) 0%, rgba(247, 147, 26, 0) 70%);
-            border-radius: 50%;
-            animation: fire-flicker 3s infinite alternate;
-        }
-
-        @keyframes fire-flicker {
-            0% { transform: translateX(-50%) scale(1); opacity: 0.8; }
-            100% { transform: translateX(-50%) scale(1.2); opacity: 0.4; }
-        }
-
-        .timer {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-top: 15px;
-            padding-top: 15px;
-            border-top: 1px solid var(--border);
-        }
-
-        .timer-icon {
-            color: var(--primary);
-        }
-
-        .timer-text {
-            font-size: 0.9rem;
-            color: var(--text-secondary);
-        }
-
-        .timer-value {
-            font-weight: 700;
-            color: var(--primary);
-        }
-
-        footer {
-            margin-top: 50px;
-            padding: 20px 0;
-            text-align: center;
-            color: var(--text-secondary);
-            font-size: 0.9rem;
-            border-top: 1px solid var(--border);
-        }
-
-        .loading {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 200px;
-        }
-
-        .spinner {
-            width: 50px;
-            height: 50px;
-            border: 5px solid rgba(255, 255, 255, 0.1);
-            border-radius: 50%;
-            border-top-color: var(--primary);
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 40px 20px;
-            color: var(--text-secondary);
-        }
-
-        .empty-state i {
-            font-size: 3rem;
-            margin-bottom: 15px;
-            color: var(--border);
-        }
-
-        .confluencia-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
-            background: linear-gradient(to right, var(--primary), var(--accent));
-            color: white;
-            padding: 5px 12px;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: 600;
-        }
-
-        .rodadas-container {
-            margin-top: 30px;
-        }
-
-        .rodadas-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-            gap: 15px;
-        }
-
-        .rodada-card {
-            background-color: var(--bg-card);
-            border-radius: 10px;
-            padding: 15px;
-            text-align: center;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-            border: 1px solid var(--border);
-            transition: transform 0.3s;
-            position: relative;
-        }
-
-        .rodada-card:hover {
-            transform: translateY(-3px);
-        }
-
-        .rodada-card.branco {
-            background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
-            border: 2px solid white;
-        }
-
-        .rodada-card.vermelho {
-            background: linear-gradient(135deg, #1a1a1a 0%, #2a0000 100%);
-            border: 2px solid #ff3b30;
-        }
-
-        .rodada-card.preto {
-            background: linear-gradient(135deg, #1a1a1a 0%, #000000 100%);
-            border: 2px solid #444444;
-        }
-
-        .rodada-card.ultima {
-            transform: scale(1.1);
-            box-shadow: 0 0 20px rgba(247, 147, 26, 0.5);
-            z-index: 10;
-        }
-
-        .rodada-card.ultima::after {
-            content: "ÚLTIMA";
-            position: absolute;
-            top: -10px;
-            right: -10px;
-            background: var(--primary);
-            color: white;
-            font-size: 0.6rem;
-            padding: 2px 6px;
-            border-radius: 10px;
-            font-weight: bold;
-        }
-
-        .rodada-numero {
-            font-size: 1.5rem;
-            font-weight: 700;
-            margin-bottom: 5px;
-        }
-
-        .rodada-cor {
-            font-size: 0.8rem;
-            margin-bottom: 5px;
-            font-weight: 600;
-        }
-
-        .rodada-horario {
-            font-size: 0.7rem;
-            color: var(--text-secondary);
-        }
-
-        .controls {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-        }
-
-        .btn {
-            background: linear-gradient(to right, var(--primary), var(--primary-dark));
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-weight: 600;
-            transition: all 0.3s;
-        }
-
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(247, 147, 26, 0.4);
-        }
-
-        .btn-secondary {
-            background: var(--bg-card);
-            color: var(--text);
-            border: 1px solid var(--border);
-        }
-
-        .btn-secondary:hover {
-            background: rgba(255, 255, 255, 0.1);
-        }
-
-        .notification {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: var(--success);
-            color: white;
-            padding: 15px 20px;
-            border-radius: 10px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-            z-index: 1000;
-            transform: translateX(150%);
-            transition: transform 0.5s;
-        }
-
-        .notification.show {
-            transform: translateX(0);
-        }
-
-        .notification.error {
-            background: var(--accent);
-        }
-
-        .notification.warning {
-            background: var(--warning);
-        }
-
-        .configuracoes-container {
-            margin-top: 30px;
-        }
-
-        .config-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-        }
-
-        @media (max-width: 768px) {
-            .config-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        .config-panel {
-            background-color: var(--bg-card);
-            border-radius: 15px;
-            padding: 20px;
-        }
-
-        .config-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            padding-bottom: 15px;
-            border-bottom: 1px solid var(--border);
-        }
-
-        .estrategias-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 10px;
-            max-height: 300px;
-            overflow-y: auto;
-            padding: 10px;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 10px;
-        }
-
-        .estrategia-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 8px;
-            border-radius: 5px;
-            transition: background 0.3s;
-        }
-
-        .estrategia-item:hover {
-            background: rgba(255, 255, 255, 0.1);
-        }
-
-        .estrategia-checkbox {
-            width: 18px;
-            height: 18px;
-            cursor: pointer;
-        }
-
-        .confluencia-control {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            margin-top: 20px;
-        }
-
-        .confluencia-slider {
-            flex: 1;
-            height: 8px;
-            background: var(--border);
-            border-radius: 4px;
-            outline: none;
-            -webkit-appearance: none;
-        }
-
-        .confluencia-slider::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            width: 20px;
-            height: 20px;
-            background: var(--primary);
-            border-radius: 50%;
-            cursor: pointer;
-        }
-
-        .confluencia-value {
-            font-weight: bold;
-            color: var(--primary);
-            min-width: 30px;
-            text-align: center;
-        }
-
-        .assertividade-container {
-            margin-top: 30px;
-        }
-
-        .assertividade-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-            gap: 15px;
-        }
-
-        .assertividade-card {
-            background-color: var(--bg-card);
-            border-radius: 10px;
-            padding: 15px;
-            border-left: 4px solid var(--primary);
-        }
-
-        .assertividade-header {
-            display: flex;
-            justify-content: between;
-            align-items: center;
-            margin-bottom: 10px;
-        }
-
-        .assertividade-nome {
-            font-weight: 600;
-            flex: 1;
-        }
-
-        .assertividade-stats {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            margin-top: 10px;
-        }
-
-        .assertividade-stat {
-            text-align: center;
-            padding: 8px;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 5px;
-        }
-
-        .assertividade-value {
-            font-size: 1.2rem;
-            font-weight: 700;
-        }
-
-        .assertividade-label {
-            font-size: 0.7rem;
-            color: var(--text-secondary);
-        }
-
-        .progress-bar {
-            height: 6px;
-            background: var(--border);
-            border-radius: 3px;
-            margin-top: 5px;
-            overflow: hidden;
-        }
-
-        .progress-fill {
-            height: 100%;
-            background: var(--success);
-            border-radius: 3px;
-            transition: width 0.5s;
-        }
-
-        .color-indicator {
-            display: inline-block;
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            margin-right: 5px;
-        }
-
-        .color-branco {
-            background-color: white;
-        }
-
-        .color-vermelho {
-            background-color: #ff3b30;
-        }
-
-        .color-preto {
-            background-color: #333333;
-        }
-
-        .badge {
-            display: inline-block;
-            padding: 3px 8px;
-            border-radius: 10px;
-            font-size: 0.7rem;
-            font-weight: 600;
-        }
-
-        .badge.ativa {
-            background-color: rgba(76, 217, 100, 0.2);
-            color: var(--success);
-        }
-
-        .badge.inativa {
-            background-color: rgba(255, 59, 48, 0.2);
-            color: var(--accent);
-        }
-
-        .api-status {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 0.8rem;
-            margin-top: 10px;
-        }
-
-        .api-online {
-            color: var(--success);
-        }
-
-        .api-offline {
-            color: var(--accent);
-        }
-
-        .server-stats {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            margin-top: 15px;
-        }
-
-        .server-stat {
-            text-align: center;
-            padding: 10px;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 8px;
-        }
-
-        .server-value {
-            font-size: 1rem;
-            font-weight: 600;
-            color: var(--primary);
-        }
-
-        .server-label {
-            font-size: 0.7rem;
-            color: var(--text-secondary);
-        }
-
-        .web-badge {
-            background: linear-gradient(45deg, #ff6b35, #f7931a);
-            color: white;
-            padding: 4px 12px;
-            border-radius: 15px;
-            font-size: 0.7rem;
-            font-weight: 600;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>1ZERO14X QUÂNTICO</title>
+  <link href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css" rel="stylesheet" />
+  <style>
+    :root {
+      --fundo: #0b0b0b;
+      --card: #1b1b1b;
+      --vermelho: #e50914;
+      --dourado: #ffd700;
+      --verde: #2ed573;
+      --cinza: #2c2c2c;
+      --texto: #f2f2f2;
+    }
+
+    body {
+      background: radial-gradient(circle at center, #111 0%, #000 100%);
+      color: var(--texto);
+      font-family: "Roboto", sans-serif;
+      margin: 0;
+      overflow-x: hidden;
+    }
+
+    /* LOGIN */
+    #login-overlay {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      text-align: center;
+      background: linear-gradient(135deg, #000 0%, #1a1a1a 100%);
+      background-size: 200% 200%;
+      animation: moverFundo 6s infinite alternate;
+      z-index: 9999;
+    }
+
+    @keyframes moverFundo {
+      0% { background-position: left top; }
+      100% { background-position: right bottom; }
+    }
+
+    #login-overlay h1 {
+      color: var(--dourado);
+      font-size: 2rem;
+      margin-bottom: 0.5rem;
+      letter-spacing: 2px;
+      text-shadow: 0 0 15px var(--dourado);
+      animation: brilho 2s infinite alternate;
+    }
+
+    @keyframes brilho {
+      from { text-shadow: 0 0 15px var(--dourado); }
+      to { text-shadow: 0 0 30px var(--vermelho); }
+    }
+
+    #login-overlay h2 {
+      color: #ccc;
+      font-weight: normal;
+      margin-bottom: 1.5rem;
+    }
+
+    #login-overlay input {
+      width: 280px;
+      padding: 0.9rem;
+      border-radius: 8px;
+      border: 1px solid var(--cinza);
+      background-color: var(--card);
+      color: var(--texto);
+      font-size: 1rem;
+      text-align: center;
+      margin-top: 0.6rem;
+      transition: 0.3s;
+    }
+
+    #login-overlay input:focus {
+      border-color: var(--dourado);
+      outline: none;
+      box-shadow: 0 0 10px var(--dourado);
+    }
+
+    .senha-container {
+      position: relative;
+      display: inline-block;
+    }
+
+    .toggle-senha {
+      position: absolute;
+      top: 50%;
+      right: 12px;
+      transform: translateY(-50%);
+      cursor: pointer;
+      color: var(--dourado);
+      font-size: 0.9rem;
+      user-select: none;
+    }
+
+    #login-overlay button {
+      margin-top: 1.5rem;
+      background: linear-gradient(90deg, var(--vermelho), #ff1e28);
+      border: none;
+      color: white;
+      padding: 0.9rem 1.4rem;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+      width: 280px;
+      font-size: 1.1rem;
+      letter-spacing: 1px;
+      box-shadow: 0 0 15px rgba(229,9,20,0.5);
+      transition: 0.3s ease;
+    }
+
+    #login-overlay button:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 30px rgba(229,9,20,0.8);
+    }
+
+    #erro-login {
+      color: #ff4d4d;
+      margin-top: 10px;
+      display: none;
+      font-weight: bold;
+    }
+
+    /* PAINEL */
+    nav {
+      background-color: var(--card);
+      border-bottom: 2px solid var(--vermelho);
+    }
+
+    main.container {
+      padding: 1rem;
+      max-width: 1200px;
+    }
+
+    .painel {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+      gap: 1rem;
+    }
+
+    .card {
+      background-color: var(--card);
+      border: 1px solid var(--cinza);
+      border-radius: 10px;
+      padding: 1rem;
+    }
+
+    .titulo {
+      color: var(--dourado);
+      text-align: center;
+      font-size: 1.4rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .sinal-atual {
+      background: linear-gradient(90deg, #004400, #00aa00);
+      border: 2px solid var(--verde);
+      box-shadow: 0 0 15px var(--verde);
+      text-align: center;
+      font-weight: bold;
+      font-size: 1.3rem;
+      border-radius: 12px;
+      padding: 1.2rem;
+      animation: pulsar 2s infinite alternate;
+    }
+
+    @keyframes pulsar {
+      from { box-shadow: 0 0 15px var(--verde); }
+      to { box-shadow: 0 0 35px var(--dourado); }
+    }
+
+    footer {
+      text-align: center;
+      margin-top: 2rem;
+      color: #999;
+      padding-bottom: 1rem;
+    }
+
+    footer a {
+      color: var(--dourado);
+      text-decoration: none;
+      font-weight: bold;
+    }
+
+    footer a:hover {
+      text-decoration: underline;
+      color: var(--vermelho);
+    }
+  </style>
 </head>
+
 <body>
-    <div id="login-overlay">
-        <h1>1ZERO14X</h1>
-        <h2>Bem-vindo ao Painel Quântico</h2>
-        <input type="text" id="usuario" placeholder="Usuário">
-        <div class="senha-container">
-            <input type="password" id="senha" placeholder="Senha">
-            <span class="toggle-senha" onclick="mostrarSenha()">👁️</span>
-        </div>
-        <button onclick="validarLogin()">Entrar</button>
-        <p id="erro-login">Usuário ou senha incorretos.</p>
+  <!-- LOGIN -->
+  <div id="login-overlay">
+    <h1>1ZERO14X</h1>
+    <h2>Bem-vindo ao Painel Quântico</h2>
+    <input type="text" id="usuario" placeholder="Usuário">
+    <div class="senha-container">
+      <input type="password" id="senha" placeholder="Senha">
+      <span class="toggle-senha" onclick="mostrarSenha()">👁️</span>
     </div>
-    <div class="container" id="sistema-container" style="display: none;">
-        <header>
-            <div class="logo">
-                <div class="logo-icon">
-                    <i class="fas fa-bolt"></i>
-                </div>
-                <div class="logo-text">1ZERO14X QUÂNTICO WEB</div>
-            </div>
-            <div class="status">
-                <div class="status-dot"></div>
-                <span>SISTEMA WEB ATIVO</span>
-                <span class="web-badge">WEB ONLY</span>
-            </div>
-        </header>
+    <button onclick="validarLogin()">Entrar</button>
+    <p id="erro-login">Usuário ou senha incorretos.</p>
+  </div>
 
-        <div class="dashboard">
-            <div class="card">
-                <div class="card-header">
-                    <div class="card-title">
-                        <i class="fas fa-chart-line"></i>
-                        <span>PLACAR DO DIA</span>
-                    </div>
-                    <div class="card-actions">
-                        <i class="fas fa-sync-alt" id="refresh-placar"></i>
-                    </div>
-                </div>
-                <div class="stats">
-                    <div class="stat-item">
-                        <div class="stat-value win" id="wins">0</div>
-                        <div class="stat-label">ACERTOS</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-value loss" id="losses">0</div>
-                        <div class="stat-label">ERROS</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-value" id="total">0</div>
-                        <div class="stat-label">TOTAL</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-value" id="percentual">0%</div>
-                        <div class="stat-label">EFICIÊNCIA</div>
-                    </div>
-                </div>
-            </div>
+  <!-- PAINEL -->
+  <nav class="container-fluid">
+    <ul><li><strong>1ZERO14X</strong></li></ul>
+    <ul><li><a href="#" onclick="fetchData()">Atualizar</a></li></ul>
+  </nav>
 
-            <div class="card">
-                <div class="card-header">
-                    <div class="card-title">
-                        <i class="fas fa-cogs"></i>
-                        <span>ESTATÍSTICAS DO SISTEMA</span>
-                    </div>
-                </div>
-                <div class="stats">
-                    <div class="stat-item">
-                        <div class="stat-value" id="estrategias-ativas">0</div>
-                        <div class="stat-label">ESTRATÉGIAS ATIVAS</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-value" id="confluencia-minima">6</div>
-                        <div class="stat-label">CONFLUÊNCIA MÍNIMA</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-value" id="sinais-ativos">0</div>
-                        <div class="stat-label">SINAIS ATIVOS</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-value" id="ultima-atualizacao">AGORA</div>
-                        <div class="stat-label">ÚLTIMA ATUALIZAÇÃO</div>
-                    </div>
-                </div>
-                <div class="server-stats">
-                    <div class="server-stat">
-                        <div class="server-value" id="api-status">ONLINE</div>
-                        <div class="server-label">BLAZE API</div>
-                    </div>
-                    <div class="server-stat">
-                        <div class="server-value" id="sistema-status">ATIVO</div>
-                        <div class="server-label">SISTEMA WEB</div>
-                    </div>
-                </div>
-            </div>
-        </div>
+  <main class="container" id="painel" style="display:none;">
+    <h1 class="titulo">PAINEL QUÂNTICO</h1>
+    <div class="card sinal-atual" id="sinal-atual">Nenhum sinal ativo no momento</div>
 
-        <div class="configuracoes-container">
-            <div class="sinais-header">
-                <div class="section-title">CONFIGURAÇÕES DO SISTEMA</div>
-            </div>
-            
-            <div class="config-grid">
-                <div class="config-panel">
-                    <div class="config-header">
-                        <div class="card-title">
-                            <i class="fas fa-sliders-h"></i>
-                            <span>CONFIGURAR ESTRATÉGIAS</span>
-                        </div>
-                        <div class="controls">
-                            <button class="btn btn-secondary" id="select-all">
-                                <i class="fas fa-check-double"></i> Todas
-                            </button>
-                            <button class="btn btn-secondary" id="deselect-all">
-                                <i class="fas fa-times"></i> Nenhuma
-                            </button>
-                        </div>
-                    </div>
-                    <div class="estrategias-grid" id="estrategias-grid">
-                        </div>
-                    <div class="confluencia-control">
-                        <span>Confluência Mínima:</span>
-                        <input type="range" min="1" max="10" value="6" class="confluencia-slider" id="confluencia-slider">
-                        <span class="confluencia-value" id="confluencia-value">6</span>
-                    </div>
-                    <button class="btn" id="save-config" style="margin-top: 20px; width: 100%;">
-                        <i class="fas fa-save"></i> Salvar Configurações
-                    </button>
-                </div>
+    <div class="painel">
+      <section class="card">
+        <h2>Último Resultado</h2>
+        <div id="ultimo-resultado-box" style="font-size:2rem;text-align:center;margin:1rem auto;">--</div>
+        <p id="ultimo-horario" style="text-align:center;color:#aaa;">--:--:--</p>
+      </section>
 
-                <div class="config-panel">
-                    <div class="config-header">
-                        <div class="card-title">
-                            <i class="fas fa-chart-bar"></i>
-                            <span>ESTATÍSTICAS EM TEMPO REAL</span>
-                        </div>
-                    </div>
-                    <div class="assertividade-stats">
-                        <div class="stat-item">
-                            <div class="stat-value" id="total-sinais">0</div>
-                            <div class="stat-label">TOTAL DE SINAIS</div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="stat-value" id="assertividade-geral">0%</div>
-                            <div class="stat-label">ASSERTIVIDADE GERAL</div>
-                        </div>
-                    </div>
-                    <div style="margin-top: 15px; max-height: 200px; overflow-y: auto;">
-                        <div id="melhores-estrategias">
-                            </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="assertividade-container">
-            <div class="sinais-header">
-                <div class="section-title">ANÁLISE DETALHADA DAS ESTRATÉGIAS</div>
-            </div>
-            <div id="assertividade-grid" class="assertividade-grid">
-                </div>
-        </div>
-
-        <div class="rodadas-container">
-            <div class="sinais-header">
-                <div class="section-title">DADOS EM TEMPO REAL - BLAZE</div>
-                <div class="controls">
-                    <button class="btn" id="fetch-rodadas">
-                        <i class="fas fa-sync-alt"></i> Atualizar Agora
-                    </button>
-                </div>
-            </div>
-            <div id="rodadas-grid" class="rodadas-grid">
-                <div class="loading">
-                    <div class="spinner"></div>
-                </div>
-            </div>
-        </div>
-
-        <div class="sinais-container">
-            <div class="sinais-header">
-                <div class="section-title">SINAIS ATIVOS - PLATAFORMA WEB</div>
-                <div class="filters">
-                    <span class="confluencia-badge">
-                        <i class="fas fa-fire"></i>
-                        CONFLUÊNCIA: <span id="confluencia-atual">0</span> ESTRATÉGIAS
-                    </span>
-                </div>
-            </div>
-
-            <div id="sinais-grid" class="sinais-grid">
-                <div class="loading">
-                    <div class="spinner"></div>
-                </div>
-            </div>
-        </div>
-
-        <footer>
-            <p>1ZERO14X QUÂNTICO WEB - Sistema Completo de Sinais</p>
-            <p>🚀 <strong>Versão Web Only - 100% Funcional</strong></p>
-            <p>📍 Dados em tempo real • Análise avançada • Interface profissional</p>
-            <p>Jogue com responsabilidade.</p>
-        </footer>
+      <section class="card">
+        <h2>Estatísticas</h2>
+        <p>Sinais: <strong id="stat-total">0</strong></p>
+        <p>WIN: <strong id="stat-win" style="color:var(--verde)">0</strong></p>
+        <p>LOSS: <strong id="stat-loss" style="color:var(--vermelho)">0</strong></p>
+        <p>Assertividade: <strong id="stat-perc" style="color:var(--dourado)">0%</strong></p>
+      </section>
     </div>
 
-    <div class="notification" id="notification">
-        <i class="fas fa-bell"></i> <span id="notification-text">Novo sinal detectado!</span>
-    </div>
+    <section class="card">
+      <h2>Sinais Ativos (Confluência)</h2>
+      <table>
+        <thead><tr><th>Hora</th><th>Força</th><th>Estratégias</th></tr></thead>
+        <tbody id="tabela-ativos"><tr><td colspan="3">Carregando...</td></tr></tbody>
+      </table>
+    </section>
 
-    <script>
-        // ==================== LOGIN 1ZERO14X JAVASCRIPT ====================
-        let autenticado = false;
-        const SENHA_CORRETA = "P@$1zero14x!";
-        const USUARIOS_VALIDOS = ["adm"];
-        for (let i = 1; i <= 20; i++) {
-          USUARIOS_VALIDOS.push("user" + (i < 10 ? "0" + i : i));
-        }
+    <section class="card">
+      <h2>Histórico de Sinais Finalizados</h2>
+      <table>
+        <thead><tr><th>Hora</th><th>Força</th><th>Resultado</th></tr></thead>
+        <tbody id="tabela-historico"><tr><td colspan="3">Aguardando dados...</td></tr></tbody>
+      </table>
+    </section>
 
-        function mostrarSenha() {
-          const campo = document.getElementById("senha");
-          campo.type = campo.type === "password" ? "text" : "password";
-        }
+    <section class="card">
+      <h2>Últimas 10 Rodadas</h2>
+      <div id="ultimas-rodadas" style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;"></div>
+    </section>
+  </main>
 
-        async function validarLogin() {
-          const usuario = document.getElementById("usuario").value.trim().toLowerCase();
-          const senha = document.getElementById("senha").value.trim();
+  <footer class="container">
+    <small>© 2025 1ZERO14X • Sistema Quântico Web<br>
+    Entre para o grupo <a href="https://t.me/free1zero14x" target="_blank">FREE 1ZERO14X no Telegram</a></small>
+  </footer>
 
-          // Simulação de delay para autenticação (opcional)
-          // await new Promise(resolve => setTimeout(resolve, 500)); 
+  <script>
+    let autenticado = false;
+    const SENHA_CORRETA = "P@$1zero14x!";
+    const USUARIOS_VALIDOS = ["adm"];
+    for (let i = 1; i <= 20; i++) {
+      USUARIOS_VALIDOS.push("user" + (i < 10 ? "0" + i : i));
+    }
 
-          if (!usuario || !senha || senha !== SENHA_CORRETA || !USUARIOS_VALIDOS.includes(usuario)) {
-            mostrarErro();
-            return;
-          }
+    function mostrarSenha() {
+      const campo = document.getElementById("senha");
+      campo.type = campo.type === "password" ? "text" : "password";
+    }
 
-          autenticado = true;
-          document.getElementById("login-overlay").style.display = "none";
-          document.getElementById("sistema-container").style.display = "block"; // Mostrar o painel após o login
-          iniciarSistema(); // Iniciar a lógica do dashboard
-        }
+    async function validarLogin() {
+      const usuario = document.getElementById("usuario").value.trim().toLowerCase();
+      const senha = document.getElementById("senha").value.trim();
 
-        function mostrarErro() {
-          const erro = document.getElementById("erro-login");
-          erro.style.display = "block";
-          erro.style.animation = "shake 0.3s"; // Adiciona animação de shake se desejar
-          setTimeout(() => erro.style.animation = "", 300);
-        }
-        // ==================== FIM LOGIN 1ZERO14X JAVASCRIPT ====================
+      if (!usuario || !senha || senha !== SENHA_CORRETA || !USUARIOS_VALIDOS.includes(usuario)) {
+        mostrarErro();
+        return;
+      }
 
+      autenticado = true;
+      document.getElementById("login-overlay").style.display = "none";
+      document.getElementById("painel").style.display = "block";
+      fetchData();
+      setInterval(fetchData, 4000);
+    }
 
-        // ========== CONFIGURAÇÕES HUNTER WHITE ==========
-        const API_BASE_URL = window.location.hostname === 'localhost' 
-            ? 'http://localhost:3000/api' 
-            : '/api';
+    function mostrarErro() {
+      const erro = document.getElementById("erro-login");
+      erro.style.display = "block";
+      erro.style.animation = "shake 0.3s";
+      setTimeout(() => erro.style.animation = "", 300);
+    }
 
-        const todasEstrategias = [
-            { id: 1, nome: "Pedra anterior + minuto", ativa: true, sinais: 45, acertos: 28 },
-            { id: 2, nome: "Pedra posterior + minuto", ativa: true, sinais: 38, acertos: 22 },
-            { id: 3, nome: "2 pedras anteriores + minuto", ativa: true, sinais: 52, acertos: 35 },
-            { id: 4, nome: "2 pedras posteriores + minuto", ativa: true, sinais: 41, acertos: 26 },
-            { id: 5, nome: "2ª pedra anterior + minuto", ativa: true, sinais: 33, acertos: 19 },
-            { id: 6, nome: "2ª pedra posterior + minuto", ativa: true, sinais: 29, acertos: 16 },
-            { id: 7, nome: "Ant+min+post", ativa: true, sinais: 47, acertos: 31 },
-            { id: 8, nome: "Minuto invertido + hora", ativa: true, sinais: 39, acertos: 24 },
-            { id: 9, nome: "Branco + 5min", ativa: true, sinais: 58, acertos: 42 },
-            { id: 10, nome: "Branco + 10min", ativa: true, sinais: 51, acertos: 37 },
-            { id: 11, nome: "Pedra 4 + 4min", ativa: true, sinais: 27, acertos: 15 },
-            { id: 12, nome: "Pedra 14 + 5min", ativa: true, sinais: 31, acertos: 18 },
-            { id: 13, nome: "Pedra 11 + 3min", ativa: true, sinais: 35, acertos: 21 },
-            { id: 14, nome: "2 pedras iguais +1h", ativa: true, sinais: 42, acertos: 29 },
-            { id: 15, nome: "Minuto final zero", ativa: true, sinais: 36, acertos: 23 },
-            { id: 16, nome: "Soma 15/21 +10min", ativa: true, sinais: 44, acertos: 30 },
-            { id: 17, nome: "2ant+min+2post", ativa: true, sinais: 49, acertos: 33 },
-            { id: 18, nome: "2 brancos +3min", ativa: true, sinais: 53, acertos: 41 },
-            { id: 19, nome: "Branco + Minuto Duplo", ativa: true, sinais: 46, acertos: 32 },
-            { id: 20, nome: "2 pedras iguais +14min", ativa: true, sinais: 37, acertos: 25 },
-            { id: 21, nome: "Seq30 sem branco", ativa: true, sinais: 40, acertos: 27 },
-            { id: 22, nome: "Dobra de Branco", ativa: true, sinais: 55, acertos: 44 },
-            { id: 23, nome: "Gêmeas", ativa: true, sinais: 32, acertos: 20 },
-            { id: 24, nome: "50 sem Branco +4min", ativa: true, sinais: 28, acertos: 17 },
-            { id: 25, nome: "60 sem Branco +4min", ativa: true, sinais: 25, acertos: 14 },
-            { id: 26, nome: "80 sem Branco +4min", ativa: true, sinais: 23, acertos: 12 }
-        ];
+    async function fetchData() {
+      if (!autenticado) return;
+      try {
+        const response = await fetch("/data");
+        const data = await response.json();
+        updateUI(data);
+      } catch (e) { console.error(e); }
+    }
 
-        let sinaisAtivos = [];
-        let ultimasRodadas = [];
-        let placar = { wins: 12, losses: 5, total: 17, percentual: 70.6 };
-        let confluenciaMinima = 6;
-        let apiOnline = true;
-        let ultimoIdProcessado = null;
-
-        // ========== API SIMPLIFICADA ==========
-        async function fetchDadosBlaze() {
-            try {
-                const response = await fetch(`${API_BASE_URL}/rodadas`);
-                if (!response.ok) throw new Error('API offline');
-                
-                const data = await response.json();
-                apiOnline = data.success;
-                return data.data || data;
-            } catch (error) {
-                console.log('📡 Modo simulação ativado');
-                apiOnline = false;
-                return null;
-            }
-        }
-
-        // ========== LÓGICA PRINCIPAL ==========
-        async function processarRodadas() {
-            try {
-                const dados = await fetchDadosBlaze();
-                atualizarStatusSistema();
-
-                if (!dados || !Array.isArray(dados)) {
-                    throw new Error('Dados inválidos');
-                }
-
-                // Processar última rodada
-                const ultimaRodada = dados[0];
-                if (ultimaRodada.id !== ultimoIdProcessado) {
-                    ultimoIdProcessado = ultimaRodada.id;
-                    
-                    // Atualizar interface
-                    ultimasRodadas = dados.map(rodada => ({
-                        id: rodada.id,
-                        numero: rodada.roll,
-                        cor: rodada.color === 0 ? 'branco' : rodada.color === 1 ? 'vermelho' : 'preto',
-                        horario: new Date(rodada.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-                        horarioReal: new Date(rodada.created_at)
-                    }));
-
-                    renderizarRodadas();
-
-                    // Gerar sinal se saiu branco
-                    if (ultimasRodadas[0].cor === 'branco') {
-                        gerarSinalWeb(ultimasRodadas[0].horarioReal);
-                    }
-
-                    // Processar resultados
-                    processarResultadosWeb();
-                }
-
-            } catch (error) {
-                console.log('Sistema em modo simulação');
-            }
-        }
-
-        function gerarSinalWeb(horarioBranco) {
-            const estrategiasAtivas = todasEstrategias.filter(e => e.ativa);
-            
-            if (estrategiasAtivas.length >= confluenciaMinima) {
-                const horarioSinal = new Date(horarioBranco.getTime() + 5 * 60000);
-                
-                const estrategiasSelecionadas = estrategiasAtivas
-                    .sort(() => 0.5 - Math.random())
-                    .slice(0, Math.min(estrategiasAtivas.length, confluenciaMinima + 2))
-                    .map(e => `${e.id}. ${e.nome}`);
-                
-                const novoSinal = {
-                    id: Date.now(),
-                    horario: horarioSinal.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-                    estrategias: estrategiasSelecionadas,
-                    confluencias: estrategiasSelecionadas.length,
-                    status: "ativo",
-                    horarioReal: horarioSinal,
-                    resultado: "pendente"
-                };
-                
-                sinaisAtivos.push(novoSinal);
-                
-                // Atualizar estatísticas
-                estrategiasSelecionadas.forEach(nomeEstrategia => {
-                    const id = parseInt(nomeEstrategia.split('.')[0]);
-                    const estrategia = todasEstrategias.find(e => e.id === id);
-                    if (estrategia) estrategia.sinais += 1;
-                });
-
-                mostrarNotificacao(`🎯 NOVO SINAL WEB: ${novoSinal.horario} (${novoSinal.confluencias} estratégias)`);
-                renderizarAssertividade();
-            }
-        }
-
-        function processarResultadosWeb() {
-            const agora = new Date();
-            const sinaisParaRemover = [];
-            
-            for (const sinal of sinaisAtivos) {
-                if (sinal.status === 'ativo') {
-                    const diferencaMinutos = (agora - sinal.horarioReal) / (1000 * 60);
-                    
-                    if (diferencaMinutos >= 0 && diferencaMinutos <= 2) {
-                        // Verificar resultado
-                        const rodadaNaJanela = ultimasRodadas.find(r => 
-                            Math.abs(r.horarioReal - sinal.horarioReal) <= 120000
-                        );
-                        
-                        if (rodadaNaJanela && rodadaNaJanela.cor === 'branco') {
-                            sinal.resultado = 'WIN';
-                            sinal.status = 'finalizado';
-                            placar.wins += 1;
-                            
-                            sinal.estrategias.forEach(nomeEstrategia => {
-                                const id = parseInt(nomeEstrategia.split('.')[0]);
-                                const estrategia = todasEstrategias.find(e => e.id === id);
-                                if (estrategia) estrategia.acertos += 1;
-                            });
-                            
-                            mostrarNotificacao(`✅ WIN: ${sinal.horario} - Branco Confirmado!`, 'success');
-                        }
-                    } else if (diferencaMinutos > 2) {
-                        sinal.resultado = 'LOSS';
-                        sinal.status = 'finalizado';
-                        placar.losses += 1;
-                        mostrarNotificacao(`❌ LOSS: ${sinal.horario} - Janela Expirada`, 'error');
-                    }
-                    
-                    if (sinal.status === 'finalizado') {
-                        sinaisParaRemover.push(sinal);
-                    }
-                }
-            }
-            
-            sinaisAtivos = sinaisAtivos.filter(sinal => !sinaisParaRemover.includes(sinal));
-            
-            // Atualizar placar
-            placar.total = placar.wins + placar.losses;
-            placar.percentual = placar.total > 0 ? ((placar.wins / placar.total) * 100).toFixed(1) : 0;
-            
-            atualizarPlacar();
-            renderizarAssertividade();
-        }
-
-        // ========== INTERFACE ==========
-        function atualizarStatusSistema() {
-            document.getElementById('api-status').textContent = apiOnline ? 'ONLINE' : 'SIMULAÇÃO';
-            document.getElementById('api-status').style.color = apiOnline ? 'var(--success)' : 'var(--warning)';
-            document.getElementById('sistema-status').textContent = 'ATIVO';
-        }
-
-        function atualizarPlacar() {
-            document.getElementById('wins').textContent = placar.wins;
-            document.getElementById('losses').textContent = placar.losses;
-            document.getElementById('total').textContent = placar.total;
-            document.getElementById('percentual').textContent = `${placar.percentual}%`;
-        }
-
-        function atualizarEstatisticas() {
-            const estrategiasAtivas = todasEstrategias.filter(e => e.ativa).length;
-            document.getElementById('estrategias-ativas').textContent = estrategiasAtivas;
-            document.getElementById('confluencia-minima').textContent = confluenciaMinima;
-            document.getElementById('sinais-ativos').textContent = sinaisAtivos.length;
-            document.getElementById('confluencia-atual').textContent = sinaisAtivos.reduce((acc, sinal) => acc + sinal.confluencias, 0);
-            document.getElementById('ultima-atualizacao').textContent = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-        }
-
-        function renderizarConfiguracoes() {
-            const estrategiasGrid = document.getElementById('estrategias-grid');
-            estrategiasGrid.innerHTML = todasEstrategias.map(estrategia => `
-                <div class="estrategia-item">
-                    <input type="checkbox" class="estrategia-checkbox" id="estrategia-${estrategia.id}" ${estrategia.ativa ? 'checked' : ''}>
-                    <label for="estrategia-${estrategia.id}">${estrategia.id}. ${estrategia.nome}</label>
-                </div>
-            `).join('');
-        }
-
-        function renderizarAssertividade() {
-            const assertividadeGrid = document.getElementById('assertividade-grid');
-            
-            const estrategiasOrdenadas = [...todasEstrategias].sort((a, b) => {
-                const assertividadeA = a.sinais > 0 ? (a.acertos / a.sinais) * 100 : 0;
-                const assertividadeB = b.sinais > 0 ? (b.acertos / b.sinais) * 100 : 0;
-                return assertividadeB - assertividadeA;
-            });
-
-            assertividadeGrid.innerHTML = estrategiasOrdenadas.map(estrategia => {
-                const assertividade = estrategia.sinais > 0 ? (estrategia.acertos / estrategia.sinais) * 100 : 0;
-                const percentual = assertividade.toFixed(1);
-                
-                return `
-                    <div class="assertividade-card">
-                        <div class="assertividade-header">
-                            <div class="assertividade-nome">${estrategia.id}. ${estrategia.nome}</div>
-                            <span class="badge ${estrategia.ativa ? 'ativa' : 'inativa'}">${estrategia.ativa ? 'ATIVA' : 'INATIVA'}</span>
-                        </div>
-                        <div class="assertividade-stats">
-                            <div class="assertividade-stat">
-                                <div class="assertividade-value">${estrategia.sinais}</div>
-                                <div class="assertividade-label">SINAIS</div>
-                            </div>
-                            <div class="assertividade-stat">
-                                <div class="assertividade-value">${estrategia.acertos}</div>
-                                <div class="assertividade-label">ACERTOS</div>
-                            </div>
-                            <div class="assertividade-stat">
-                                <div class="assertividade-value">${estrategia.sinais - estrategia.acertos}</div>
-                                <div class="assertividade-label">ERROS</div>
-                            </div>
-                            <div class="assertividade-stat">
-                                <div class="assertividade-value">${percentual}%</div>
-                                <div class="assertividade-label">EFICIÊNCIA</div>
-                            </div>
-                        </div>
-                        <div class="progress-bar">
-                            <div class="progress-fill" style="width: ${percentual}%"></div>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-
-            // Estatísticas gerais
-            const totalSinais = todasEstrategias.reduce((acc, e) => acc + e.sinais, 0);
-            const totalAcertos = todasEstrategias.reduce((acc, e) => acc + e.acertos, 0);
-            const assertividadeGeral = totalSinais > 0 ? ((totalAcertos / totalSinais) * 100).toFixed(1) : 0;
-
-            document.getElementById('total-sinais').textContent = totalSinais;
-            document.getElementById('assertividade-geral').textContent = `${assertividadeGeral}%`;
-
-            // Top 3 estratégias
-            const melhoresEstrategias = estrategiasOrdenadas.slice(0, 3);
-            document.getElementById('melhores-estrategias').innerHTML = `
-                <div style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 10px;">TOP 3 ESTRATÉGIAS:</div>
-                ${melhoresEstrategias.map(e => {
-                    const percentual = e.sinais > 0 ? ((e.acertos / e.sinais) * 100).toFixed(1) : '0.0';
-                    return `<div style="margin-bottom: 5px;">${e.id}. ${e.nome} - ${percentual}%</div>`;
-                }).join('')}
-            `;
-        }
-
-        function renderizarRodadas() {
-            const rodadasGrid = document.getElementById('rodadas-grid');
-            
-            if (ultimasRodadas.length === 0) {
-                rodadasGrid.innerHTML = `
-                    <div class="empty-state">
-                        <i class="fas fa-dice"></i>
-                        <h3>Conectando à Blaze API...</h3>
-                        <p>Aguardando dados em tempo real</p>
-                    </div>
-                `;
-                return;
-            }
-            
-            rodadasGrid.innerHTML = ultimasRodadas.map((rodada, index) => `
-                <div class="rodada-card ${rodada.cor} ${index === 0 ? 'ultima' : ''}">
-                    <div class="rodada-numero">${rodada.numero}</div>
-                    <div class="rodada-cor">
-                        <span class="color-indicator color-${rodada.cor}"></span>
-                        ${rodada.cor.toUpperCase()}
-                    </div>
-                    <div class="rodada-horario">${rodada.horario}</div>
-                </div>
-            `).join('');
-        }
-
-        function renderizarSinais() {
-            const sinaisGrid = document.getElementById('sinais-grid');
-            
-            if (sinaisAtivos.length === 0) {
-                sinaisGrid.innerHTML = `
-                    <div class="empty-state">
-                        <i class="fas fa-bell-slash"></i>
-                        <h3>Nenhum sinal ativo no momento</h3>
-                        <p>Novos sinais aparecerão aqui quando houver confluência de ${confluenciaMinima}+ estratégias</p>
-                    </div>
-                `;
-                return;
-            }
-            
-            sinaisGrid.innerHTML = sinaisAtivos.map(sinal => {
-                const agora = new Date();
-                const diferencaMs = sinal.horarioReal - agora;
-                const minutosRestantes = Math.max(0, Math.floor(diferencaMs / 60000));
-                const segundosRestantes = Math.max(0, Math.floor((diferencaMs % 60000) / 1000));
-                
-                return `
-                    <div class="sinal-card ativo">
-                        <div class="fire-animation">
-                            <div class="fire"></div>
-                        </div>
-                        <div class="sinal-status">AGUARDANDO</div>
-                        <div class="sinal-horario">${sinal.horario}</div>
-                        <div class="sinal-details">
-                            <div class="sinal-detail">
-                                <span class="sinal-detail-label">Confluência:</span>
-                                <span>${sinal.confluencias} estratégias</span>
-                            </div>
-                            <div class="sinal-detail">
-                                <span class="sinal-detail-label">Alvo:</span>
-                                <span>BRANCO</span>
-                            </div>
-                            <div class="sinal-detail">
-                                <span class="sinal-detail-label">Probabilidade:</span>
-                                <span>${(sinal.confluencias * 3.8).toFixed(1)}%</span>
-                            </div>
-                        </div>
-                        <div class="estrategias-list">
-                            <div class="estrategias-secretas">
-                                🚀 SISTEMA 1ZERO14X QUÂNTICO
-                            </div>
-                        </div>
-                        <div class="timer">
-                            <i class="fas fa-clock timer-icon"></i>
-                            <span class="timer-text">Resultado em:</span>
-                            <span class="timer-value">${minutosRestantes}:${segundosRestantes.toString().padStart(2, '0')}</span>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        function mostrarNotificacao(mensagem, tipo = 'success') {
-            const notification = document.getElementById('notification');
-            const notificationText = document.getElementById('notification-text');
-            
-            notificationText.textContent = mensagem;
-            notification.className = `notification ${tipo} show`;
-            
-            setTimeout(() => {
-                notification.classList.remove('show');
-            }, 5000);
-        }
-
-        // ========== INICIALIZAÇÃO DO SISTEMA (CHAMADO APÓS LOGIN) ==========
-        async function iniciarSistema() {
-            // Renderizar interface
-            renderizarConfiguracoes();
-            renderizarAssertividade();
-            atualizarPlacar();
-            atualizarEstatisticas();
-            renderizarRodadas();
-            renderizarSinais();
-            atualizarStatusSistema();
-            
-            // Configurar eventos
-            document.getElementById('refresh-placar').addEventListener('click', () => {
-                atualizarPlacar();
-                mostrarNotificacao('Placar atualizado!');
-            });
-            
-            document.getElementById('fetch-rodadas').addEventListener('click', async () => {
-                await processarRodadas();
-                mostrarNotificacao('Dados atualizados!');
-            });
-            
-            // Configurar controles
-            const confluenciaSlider = document.getElementById('confluencia-slider');
-            const confluenciaValue = document.getElementById('confluencia-value');
-            
-            confluenciaSlider.addEventListener('input', () => {
-                confluenciaMinima = parseInt(confluenciaSlider.value);
-                confluenciaValue.textContent = confluenciaMinima;
-                atualizarEstatisticas();
-            });
-            
-            document.getElementById('select-all').addEventListener('click', () => {
-                todasEstrategias.forEach(e => e.ativa = true);
-                renderizarConfiguracoes();
-                renderizarAssertividade();
-                atualizarEstatisticas();
-                mostrarNotificacao('Todas as estratégias ativadas!');
-            });
-            
-            document.getElementById('deselect-all').addEventListener('click', () => {
-                todasEstrategias.forEach(e => e.ativa = false);
-                renderizarConfiguracoes();
-                renderizarAssertividade();
-                atualizarEstatisticas();
-                mostrarNotificacao('Todas as estratégias desativadas!');
-            });
-            
-            document.getElementById('save-config').addEventListener('click', () => {
-                todasEstrategias.forEach(estrategia => {
-                    const checkbox = document.getElementById(`estrategia-${estrategia.id}`);
-                    estrategia.ativa = checkbox.checked;
-                });
-                renderizarAssertividade();
-                atualizarEstatisticas();
-                mostrarNotificacao('Configurações salvas com sucesso!');
-            });
-            
-            document.getElementById('estrategias-grid').addEventListener('change', (e) => {
-                if (e.target.classList.contains('estrategia-checkbox')) {
-                    const id = parseInt(e.target.id.split('-')[1]);
-                    const estrategia = todasEstrategias.find(e => e.id === id);
-                    if (estrategia) {
-                        estrategia.ativa = e.target.checked;
-                        renderizarAssertividade();
-                        atualizarEstatisticas();
-                    }
-                }
-            });
-            
-            // Sistema em tempo real
-            setInterval(processarRodadas, 5000);
-            setInterval(() => {
-                atualizarEstatisticas();
-                renderizarSinais();
-            }, 1000);
-            
-            // Iniciar
-            await processarRodadas();
-            
-            // Efeito
-            const logoText = document.querySelector('.logo-text');
-            const originalText = logoText.textContent;
-            logoText.textContent = '';
-            let i = 0;
-            
-            function typeWriter() {
-                if (i < originalText.length) {
-                    logoText.textContent += originalText.charAt(i);
-                    i++;
-                    setTimeout(typeWriter, 100);
-                }
-            }
-            setTimeout(typeWriter, 100);
-        }
-
-        // Aguarda o carregamento completo do DOM antes de tentar o login.
-        document.addEventListener('DOMContentLoaded', () => {
-            // O sistema espera a chamada de 'validarLogin' para chamar 'iniciarSistema'
-        });
-    </script>
+    function updateUI(data) {
+      if (!data || !data.ultimo_resultado) return;
+      const box = document.getElementById('ultimo-resultado-box');
+      box.textContent = data.ultimo_resultado.numero;
+      box.style.backgroundColor = data.ultimo_resultado.cor === 'vermelho' ? '#e50914' :
+                                  data.ultimo_resultado.cor === 'preto' ? '#000' : '#ffd700';
+      document.getElementById('ultimo-horario').textContent = data.ultimo_resultado.horario;
+    }
+  </script>
 </body>
 </html>
