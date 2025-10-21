@@ -2,8 +2,8 @@ from flask import Flask, jsonify, render_template
 import threading
 import time
 import requests
-import os # Necessário para variáveis de ambiente (PORT)
-import sys # Melhor para logs em ambiente de produção (Render/Gunicorn)
+import os 
+import sys 
 
 
 # Assumindo que sua pasta de templates chama 'modelos'
@@ -81,10 +81,10 @@ def data():
 
 
 # =============================================================================
-# CORREÇÃO CRÍTICA PARA SERVIDOR GUNICORN/RENDER (Thread)
-# A thread de coleta AGORA será iniciada pelo servidor (e não ignorada).
+# CORREÇÃO FINAL DA THREAD (RESOLVENDO O AttributeError)
 # =============================================================================
-@app.before_first_request
+# Substituído @app.before_first_request por @app.before_serving
+@app.before_serving
 def iniciar_coleta():
     coletor_thread = threading.Thread(target=coletar_dados_blaze, daemon=True)
     coletor_thread.start()
@@ -95,5 +95,4 @@ if __name__ == '__main__':
     # Pega a porta da variável de ambiente, ou usa 5000 como padrão
     port = int(os.environ.get("PORT", 5000))
     print(f"🚀 Servidor Flask iniciado na porta {port}.", file=sys.stderr)
-    # debug=False é crucial para não criar threads duplicadas
     app.run(host='0.0.0.0', port=port, debug=False)
