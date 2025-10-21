@@ -1,214 +1,321 @@
 <!DOCTYPE html>
-<html lang="pt-BR" data-bs-theme="dark">
+<html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>1ZERO14X QUÂNTICO</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        body { background-color: #121212; color: white; }
-        .container { max-width: 1200px; }
-        .card { background-color: #1E1E1E; border: 1px solid #333; margin-bottom: 20px; }
-        .card-header { background-color: #2A2A2A; color: #FFD700; font-weight: bold; border-bottom: 1px solid #333; }
-        .table { --bs-table-bg: #1E1E1E; --bs-table-striped-bg: #2A2A2A; --bs-table-hover-bg: #333; color: white;}
-        .table > :not(caption) > * > * { padding: .5rem .5rem; }
-        
-        /* Estilos do resultado */
-        .round-box {
-            width: 80px; height: 80px;
-            border-radius: 8px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            font-weight: bold;
-            color: white;
-            font-size: 1.5rem;
-            margin: auto;
-        }
-        .round-box-vermelho { background-color: #E74C3C; border: 2px solid #C0392B; }
-        .round-box-preto { background-color: #34495E; border: 2px solid #2C3E50; }
-        .round-box-branco { background-color: #F1C40F; border: 2px solid #F39C12; color: black; }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>1ZERO14X QUÂNTICO</title>
+  <link href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css" rel="stylesheet" />
+  <style>
+    :root {
+      --fundo: #0b0b0b;
+      --card: #1b1b1b;
+      --vermelho: #e50914;
+      --dourado: #ffd700;
+      --verde: #2ed573;
+      --cinza: #2c2c2c;
+      --texto: #f2f2f2;
+    }
 
-        /* Estilos de histórico */
-        .rodada-vermelho { background-color: #4A1E1E !important; }
-        .rodada-preto { background-color: #283747 !important; }
-        .rodada-branco { background-color: #6C551F !important; }
+    body {
+      background: radial-gradient(circle at center, #111 0%, #000 100%);
+      color: var(--texto);
+      font-family: "Roboto", sans-serif;
+      margin: 0;
+      overflow-x: hidden;
+    }
 
-        /* Resultados de Sinais */
-        .resultado-WIN { background-color: #198754 !important; color: white; }
-        .resultado-LOSS { background-color: #DC3545 !important; color: white; }
-        .resultado-pendente { background-color: #34495E !important; color: white; }
-        
-        .sinal-ALTA { color: #198754; font-weight: bold; }
-        .sinal-MÉDIA { color: #FFC107; font-weight: bold; }
-        .sinal-BAIXA { color: #0D6EFD; font-weight: bold; }
-        .sinal-DIRETO { color: #DC3545; font-weight: bold; }
-    </style>
+    /* LOGIN */
+    #login-overlay {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      text-align: center;
+      background: linear-gradient(135deg, #000 0%, #1a1a1a 100%);
+      background-size: 200% 200%;
+      animation: moverFundo 6s infinite alternate;
+      z-index: 9999;
+    }
+
+    @keyframes moverFundo {
+      0% { background-position: left top; }
+      100% { background-position: right bottom; }
+    }
+
+    #login-overlay h1 {
+      color: var(--dourado);
+      font-size: 2rem;
+      margin-bottom: 0.5rem;
+      letter-spacing: 2px;
+      text-shadow: 0 0 15px var(--dourado);
+      animation: brilho 2s infinite alternate;
+    }
+
+    @keyframes brilho {
+      from { text-shadow: 0 0 15px var(--dourado); }
+      to { text-shadow: 0 0 30px var(--vermelho); }
+    }
+
+    #login-overlay h2 {
+      color: #ccc;
+      font-weight: normal;
+      margin-bottom: 1.5rem;
+    }
+
+    #login-overlay input {
+      width: 280px;
+      padding: 0.9rem;
+      border-radius: 8px;
+      border: 1px solid var(--cinza);
+      background-color: var(--card);
+      color: var(--texto);
+      font-size: 1rem;
+      text-align: center;
+      margin-top: 0.6rem;
+      transition: 0.3s;
+    }
+
+    #login-overlay input:focus {
+      border-color: var(--dourado);
+      outline: none;
+      box-shadow: 0 0 10px var(--dourado);
+    }
+
+    .senha-container {
+      position: relative;
+      display: inline-block;
+    }
+
+    .toggle-senha {
+      position: absolute;
+      top: 50%;
+      right: 12px;
+      transform: translateY(-50%);
+      cursor: pointer;
+      color: var(--dourado);
+      font-size: 0.9rem;
+      user-select: none;
+    }
+
+    #login-overlay button {
+      margin-top: 1.5rem;
+      background: linear-gradient(90deg, var(--vermelho), #ff1e28);
+      border: none;
+      color: white;
+      padding: 0.9rem 1.4rem;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+      width: 280px;
+      font-size: 1.1rem;
+      letter-spacing: 1px;
+      box-shadow: 0 0 15px rgba(229,9,20,0.5);
+      transition: 0.3s ease;
+    }
+
+    #login-overlay button:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 30px rgba(229,9,20,0.8);
+    }
+
+    #erro-login {
+      color: #ff4d4d;
+      margin-top: 10px;
+      display: none;
+      font-weight: bold;
+    }
+
+    /* PAINEL */
+    nav {
+      background-color: var(--card);
+      border-bottom: 2px solid var(--vermelho);
+    }
+
+    main.container {
+      padding: 1rem;
+      max-width: 1200px;
+    }
+
+    .painel {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+      gap: 1rem;
+    }
+
+    .card {
+      background-color: var(--card);
+      border: 1px solid var(--cinza);
+      border-radius: 10px;
+      padding: 1rem;
+    }
+
+    .titulo {
+      color: var(--dourado);
+      text-align: center;
+      font-size: 1.4rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .sinal-atual {
+      background: linear-gradient(90deg, #004400, #00aa00);
+      border: 2px solid var(--verde);
+      box-shadow: 0 0 15px var(--verde);
+      text-align: center;
+      font-weight: bold;
+      font-size: 1.3rem;
+      border-radius: 12px;
+      padding: 1.2rem;
+      animation: pulsar 2s infinite alternate;
+    }
+
+    @keyframes pulsar {
+      from { box-shadow: 0 0 15px var(--verde); }
+      to { box-shadow: 0 0 35px var(--dourado); }
+    }
+
+    footer {
+      text-align: center;
+      margin-top: 2rem;
+      color: #999;
+      padding-bottom: 1rem;
+    }
+
+    footer a {
+      color: var(--dourado);
+      text-decoration: none;
+      font-weight: bold;
+    }
+
+    footer a:hover {
+      text-decoration: underline;
+      color: var(--vermelho);
+    }
+  </style>
 </head>
+
 <body>
-    <div class="container mt-5">
-        <h1 class="text-center mb-4 text-warning">1ZERO14X QUÂNTICO (WEB)</h1>
-        
-        <div class="row">
-            <div class="col-md-4">
-                <div class="card text-center">
-                    <div class="card-header">ÚLTIMO RESULTADO</div>
-                    <div class="card-body">
-                        <div id="ultimo-resultado-box" class="round-box round-box-branco">--</div>
-                        <p class="mt-2 mb-0" id="ultimo-horario">--:--:--</p>
-                    </div>
-                </div>
-            </div>
+  <!-- LOGIN -->
+  <div id="login-overlay">
+    <h1>1ZERO14X</h1>
+    <h2>Bem-vindo ao Painel Quântico</h2>
+    <input type="text" id="usuario" placeholder="Usuário">
+    <div class="senha-container">
+      <input type="password" id="senha" placeholder="Senha">
+      <span class="toggle-senha" onclick="mostrarSenha()">👁️</span>
+    </div>
+    <button onclick="validarLogin()">Entrar</button>
+    <p id="erro-login">Usuário ou senha incorretos.</p>
+  </div>
 
-            <div class="col-md-8">
-                <div class="card">
-                    <div class="card-header">ESTATÍSTICAS DO DIA (últimos 60 sinais)</div>
-                    <div class="card-body">
-                        <div class="row text-center">
-                            <div class="col-4">
-                                <h3>Total Sinais: <span id="stat-total" class="text-info">0</span></h3>
-                            </div>
-                            <div class="col-4">
-                                <h3>WINS: <span id="stat-win" class="text-success">0</span></h3>
-                            </div>
-                            <div class="col-4">
-                                <h3>LOSSES: <span id="stat-loss" class="text-danger">0</span></h3>
-                            </div>
-                            <div class="col-12 mt-2">
-                                <h2>Assertividade: <span id="stat-perc" class="text-warning">0%</span></h2>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <div class="card">
-            <div class="card-header">ÚLTIMAS 10 RODADAS</div>
-            <div class="card-body">
-                <div id="ultimas-rodadas" class="d-flex flex-row flex-wrap justify-content-center gap-2">
-                    </div>
-            </div>
-        </div>
+  <!-- PAINEL -->
+  <nav class="container-fluid">
+    <ul><li><strong>1ZERO14X</strong></li></ul>
+    <ul><li><a href="#" onclick="fetchData()">Atualizar</a></li></ul>
+  </nav>
 
-        <div class="row">
-            <div class="col-md-6">
-                <div class="card">
-                    <div class="card-header">SINAIS ATIVOS (Próximas Entradas)</div>
-                    <div class="card-body p-0">
-                        <div class="table-responsive">
-                            <table class="table table-striped table-hover mb-0">
-                                <thead>
-                                    <tr>
-                                        <th>Hora</th>
-                                        <th>Força</th>
-                                        <th>Estratégias de Confluência</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="tabela-ativos">
-                                    <tr><td colspan="3" class="text-center text-muted">Aguardando dados...</td></tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
+  <main class="container" id="painel" style="display:none;">
+    <h1 class="titulo">PAINEL QUÂNTICO</h1>
+    <div class="card sinal-atual" id="sinal-atual">Nenhum sinal ativo no momento</div>
 
-            <div class="col-md-6">
-                 <div class="card">
-                    <div class="card-header">HISTÓRICO SINAIS FINALIZADOS</div>
-                    <div class="card-body p-0">
-                         <div class="table-responsive">
-                            <table class="table table-striped table-hover mb-0">
-                                <thead>
-                                    <tr>
-                                        <th>Hora</th>
-                                        <th>Força</th>
-                                        <th>Resultado</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="tabela-historico">
-                                    <tr><td colspan="3" class="text-center text-muted">Aguardando dados...</td></tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+    <div class="painel">
+      <section class="card">
+        <h2>Último Resultado</h2>
+        <div id="ultimo-resultado-box" style="font-size:2rem;text-align:center;margin:1rem auto;">--</div>
+        <p id="ultimo-horario" style="text-align:center;color:#aaa;">--:--:--</p>
+      </section>
+
+      <section class="card">
+        <h2>Estatísticas</h2>
+        <p>Sinais: <strong id="stat-total">0</strong></p>
+        <p>WIN: <strong id="stat-win" style="color:var(--verde)">0</strong></p>
+        <p>LOSS: <strong id="stat-loss" style="color:var(--vermelho)">0</strong></p>
+        <p>Assertividade: <strong id="stat-perc" style="color:var(--dourado)">0%</strong></p>
+      </section>
     </div>
 
-    <script>
-        function updateUI(data) {
-            // Atualiza Último Resultado
-            const box = document.getElementById('ultimo-resultado-box');
-            box.textContent = data.ultimo_resultado.numero;
-            box.className = 'round-box ' + 'round-box-' + data.ultimo_resultado.cor;
-            document.getElementById('ultimo-horario').textContent = data.ultimo_resultado.horario;
+    <section class="card">
+      <h2>Sinais Ativos (Confluência)</h2>
+      <table>
+        <thead><tr><th>Hora</th><th>Força</th><th>Estratégias</th></tr></thead>
+        <tbody id="tabela-ativos"><tr><td colspan="3">Carregando...</td></tr></tbody>
+      </table>
+    </section>
 
-            // Atualiza Últimas 10 Rodadas
-            const rodadasContainer = document.getElementById('ultimas-rodadas');
-            rodadasContainer.innerHTML = data.ultimas_10_rodadas.map(r => `
-                <div class="round-box rodada-${r.cor}" style="width: 40px; height: 40px; font-size: 1rem;">
-                    ${r.numero}
-                </div>
-            `).join('');
+    <section class="card">
+      <h2>Histórico de Sinais Finalizados</h2>
+      <table>
+        <thead><tr><th>Hora</th><th>Força</th><th>Resultado</th></tr></thead>
+        <tbody id="tabela-historico"><tr><td colspan="3">Aguardando dados...</td></tr></tbody>
+      </table>
+    </section>
 
-            // Atualiza Estatísticas
-            document.getElementById('stat-total').textContent = data.estatisticas.sinais;
-            document.getElementById('stat-win').textContent = data.estatisticas.win;
-            document.getElementById('stat-loss').textContent = data.estatisticas.loss;
-            document.getElementById('stat-perc').textContent = data.estatisticas.perc;
+    <section class="card">
+      <h2>Últimas 10 Rodadas</h2>
+      <div id="ultimas-rodadas" style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;"></div>
+    </section>
+  </main>
 
-            // Atualiza tabela de sinais ativos
-            const tabelaAtivos = document.getElementById('tabela-ativos');
-            if (data.sinais_ativos.length > 0) {
-                tabelaAtivos.innerHTML = data.sinais_ativos.map(s => `
-                    <tr>
-                        <td>${s.horario}</td>
-                        <td class="sinal-${s.nivel}">${s.forca}</td>
-                        <td>${s.estrategias}</td>
-                    </tr>
-                `).join('');
-            } else {
-                tabelaAtivos.innerHTML = '<tr><td colspan="3" class="text-center text-muted">Nenhum sinal ativo no momento</td></tr>';
-            }
+  <footer class="container">
+    <small>© 2025 1ZERO14X • Sistema Quântico Web<br>
+    Entre para o grupo <a href="https://t.me/free1zero14x" target="_blank">FREE 1ZERO14X no Telegram</a></small>
+  </footer>
 
-            // Atualiza tabela de histórico
-            const tabelaHistorico = document.getElementById('tabela-historico');
-             if (data.historico_sinais.length > 0) {
-                tabelaHistorico.innerHTML = data.historico_sinais.map(s => `
-                    <tr class="resultado-${s.resultado}">
-                        <td>${s.horario}</td>
-                        <td>${s.forca}</td>
-                        <td>${s.resultado}</td>
-                    </tr>
-                `).join('');
-            } else {
-                 tabelaHistorico.innerHTML = '<tr><td colspan="3" class="text-center text-muted">Nenhum histórico ainda</td></tr>';
-            }
-        }
+  <script>
+    let autenticado = false;
+    const SENHA_CORRETA = "P@$1zero14x!";
+    const USUARIOS_VALIDOS = ["adm"];
+    for (let i = 1; i <= 20; i++) {
+      USUARIOS_VALIDOS.push("user" + (i < 10 ? "0" + i : i));
+    }
 
-        async function fetchData() {
-            try {
-                // Rota protegida (o navegador usará as credenciais do login inicial)
-                const response = await fetch('/data');
-                // Se a resposta for 401 (Unauthorized) ou outra falha, o JSON não será lido.
-                if (!response.ok) {
-                    throw new Error(`Erro de rede ou autenticação: ${response.status}`);
-                }
-                const data = await response.json();
-                updateUI(data);
-            } catch (error) {
-                console.error("Erro ao buscar dados:", error);
-            }
-        }
+    function mostrarSenha() {
+      const campo = document.getElementById("senha");
+      campo.type = campo.type === "password" ? "text" : "password";
+    }
 
-        // Busca dados a cada 3 segundos
-        setInterval(fetchData, 3000);
-        // Busca dados imediatamente ao carregar a página
-        fetchData();
-    </script>
+    async function validarLogin() {
+      const usuario = document.getElementById("usuario").value.trim().toLowerCase();
+      const senha = document.getElementById("senha").value.trim();
+
+      if (!usuario || !senha || senha !== SENHA_CORRETA || !USUARIOS_VALIDOS.includes(usuario)) {
+        mostrarErro();
+        return;
+      }
+
+      autenticado = true;
+      document.getElementById("login-overlay").style.display = "none";
+      document.getElementById("painel").style.display = "block";
+      fetchData();
+      setInterval(fetchData, 4000);
+    }
+
+    function mostrarErro() {
+      const erro = document.getElementById("erro-login");
+      erro.style.display = "block";
+      erro.style.animation = "shake 0.3s";
+      setTimeout(() => erro.style.animation = "", 300);
+    }
+
+    async function fetchData() {
+      if (!autenticado) return;
+      try {
+        const response = await fetch("/data");
+        const data = await response.json();
+        updateUI(data);
+      } catch (e) { console.error(e); }
+    }
+
+    function updateUI(data) {
+      if (!data || !data.ultimo_resultado) return;
+      const box = document.getElementById('ultimo-resultado-box');
+      box.textContent = data.ultimo_resultado.numero;
+      box.style.backgroundColor = data.ultimo_resultado.cor === 'vermelho' ? '#e50914' :
+                                  data.ultimo_resultado.cor === 'preto' ? '#000' : '#ffd700';
+      document.getElementById('ultimo-horario').textContent = data.ultimo_resultado.horario;
+    }
+  </script>
 </body>
 </html>
