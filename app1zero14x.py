@@ -35,7 +35,7 @@ def get_password(username):
 # LÓGICA DO BOT (API ORIGINAL)
 # =============================================================================
 
-# CORREÇÃO CRÍTICA FINAL: URL sem o ".br" para evitar bloqueio.
+# URL FINAL CORRIGIDA
 API_URL = 'https://blaze.bet/api/singleplayer-originals/originals/roulette_games/recent/1'
 FUSO_BRASIL = timezone(timedelta(hours=-3))
 
@@ -43,8 +43,25 @@ def agora_brasil():
     """Retorna o datetime atual no fuso horário do Brasil"""
     return datetime.now(FUSO_BRASIL)
 
-# === ESQUELETO DAS CLASSES ===
+# --- CONFIGURAÇÃO DO PROXY ---
+# Pega as variáveis de ambiente (HTTPS_PROXY é a mais importante para a Blaze)
+PROXY_HTTP = os.environ.get("HTTP_PROXY")
+PROXY_HTTPS = os.environ.get("HTTPS_PROXY")
 
+# Cria o dicionário de proxies (Será None se as variáveis não existirem)
+PROXIES = {}
+if PROXY_HTTP:
+    PROXIES['http'] = PROXY_HTTP
+if PROXY_HTTPS:
+    PROXIES['https'] = PROXY_HTTPS
+
+# Exemplo de como ficaria o dicionário (se estiver configurado):
+# PROXIES = {'http': 'http://endereco:porta', 'https': 'http://endereco:porta'}
+# -----------------------------
+
+
+# === ESQUELETO DAS CLASSES ===
+# ... (Classes EstatisticasEstrategias, GerenciadorSinais, AnalisadorEstrategiaHorarios inalteradas)
 class EstatisticasEstrategias:
     def __init__(self):
         self.estatisticas = defaultdict(lambda: {'sinais': 0, 'acertos': 0})
@@ -78,6 +95,7 @@ class AnalisadorEstrategiaHorarios:
         self.ultimas_rodadas.append((cor, numero, horario_real))
         self.gerenciador.processar_resultado(horario_real, cor)
 
+
 # =============================================================================
 # INSTANCIAÇÃO GLOBAL
 # =============================================================================
@@ -85,25 +103,33 @@ analisar_global = AnalisadorEstrategiaHorarios()
 last_id_processed = None 
 
 # =============================================================================
-# FUNÇÃO DE BUSCA DE DADOS EM SEGUNDO PLANO (ROBUSTA)
+# FUNÇÃO DE BUSCA DE DADOS EM SEGUNDO PLANO (AGORA COM PROXY)
 # =============================================================================
 
 def verificar_resultados():
-    """Busca o último resultado da Blaze e processa se for novo."""
+    """Busca o último resultado da Blaze e processa se for novo, usando proxy se configurado."""
     global last_id_processed
     
-    # Removido o sleep(5) que era temporário.
-    
+    # Informa se está usando proxy
+    if PROXIES:
+        proxy_info = PROXIES.get('https') or PROXIES.get('http')
+        print(f"[THREAD] Iniciando busca com PROXY: {proxy_info}", file=sys.stderr)
+    else:
+        print("[THREAD] Iniciando busca SEM PROXY (dependendo do IP do Render).", file=sys.stderr)
+
     while True:
         try:
-            print(f"[THREAD] Buscando API (URL corrigida). Último ID: {last_id_processed}", file=sys.stderr)
+            print(f"[THREAD] Tentando buscar API. Último ID: {last_id_processed}", file=sys.stderr)
             
-            # 1. Busca os resultados
-            response = requests.get(API_URL, timeout=10) 
+            # 1. Busca os resultados (Adicionado 'proxies=PROXIES')
+            response = requests.get(API_URL, timeout=10, proxies=PROXIES) 
             
             # 2. TRATAMENTO DE ERROS (lança HTTPError)
             response.raise_for_status() 
             data = response.json()
+            
+            # ... (Restante da lógica de processamento de dados inalterada) ...
+            print(f"[THREAD] Busca API OK. Resultados encontrados: {len(data)}", file=sys.stderr)
             
             # 3. Processa os resultados
             new_results = []
@@ -140,8 +166,8 @@ def verificar_resultados():
 
         # Trata erros específicos
         except requests.exceptions.RequestException as e:
-            # ERRO ESPERADO SE O BLOQUEIO PERSISTIR
-            print(f"[ERRO THREAD] RequestException (Rede/Timeout/Bloqueio): {e}", file=sys.stderr)
+            # O ERRO DE BLOQUEIO DE IP/TIMEOUT CONTINUARÁ AQUI SE NÃO HOUVER PROXY FUNCIONAL
+            print(f"[ERRO THREAD] RequestException (Rede/Timeout/Bloqueio/Proxy): {e}", file=sys.stderr)
         except Exception as e:
             # Captura qualquer erro inesperado
             print(f"[ERRO THREAD] Erro inesperado: {e}", file=sys.stderr)
@@ -170,7 +196,7 @@ def index():
 @app.route('/data')
 @auth.login_required
 def data():
-    # Coleta sinais e estatísticas
+    # ... (Restante do bloco /data inalterado) ...
     gerenciador = analisar_global.gerenciador 
     sinais_finalizados = gerenciador.get_sinais_finalizados()
     
@@ -233,18 +259,16 @@ def data():
 
 
 # =============================================================================
-# INICIALIZAÇÃO DA THREAD (MOVIDA PARA FORA DE __main__)
-# Esta é a correção crítica para que o Gunicorn/Render inicie a coleta.
+# INICIALIZAÇÃO DA THREAD (FORA DE __main__)
 # =============================================================================
-thread_api = threading.Thread(name='verificador_resultados',
+daemon = threading.Thread(name='verificador_resultados',
                           target=verificar_resultados,
                           daemon=True)
 
-# Inicia a thread imediatamente quando o módulo é carregado
-if not thread_api.is_alive():
-    thread_api.start()
+if not daemon.is_alive():
+    daemon.start()
 
-# O bloco __main__ é só para rodar localmente, o Gunicorn ignora.
+
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False)
