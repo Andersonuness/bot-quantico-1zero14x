@@ -21,9 +21,13 @@ def agora_brasil():
     return datetime.now(FUSO_BRASIL)
 
 def buscar_dados_api(api_url):
-    """Função para buscar os dados de rodadas recentes da API"""
+    """Função para buscar os dados de rodadas recentes da API com User-Agent."""
+    # Adicionando um User-Agent de navegador para tentar evitar bloqueio 451
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+    }
     try:
-        response = requests.get(api_url, timeout=5)
+        response = requests.get(api_url, headers=headers, timeout=5)
         response.raise_for_status()
         data = response.json()
         return data.get('data', [])
@@ -690,7 +694,7 @@ def iniciar_coleta_blaze():
 # ----------------------------------------
 # Inicialização do Thread de Coleta (CORRIGIDO)
 # ----------------------------------------
-@app.before_request # CORRIGIDO: Substitui 'before_first_request'
+@app.before_request 
 def start_thread():
     # Verifica se a thread já está rodando para evitar múltiplos inícios no Gunicorn
     if not hasattr(start_thread, 'thread_started'):
@@ -706,18 +710,23 @@ def start_thread():
 # ----------------------------------------
 @app.route("/")
 def index():
+    # OBS: O arquivo 'index.html' deve estar na pasta 'modelos/'
     return render_template("index.html")
 
 @app.route("/data")
 @auth.login_required
 def data():
     """Retorna dados consolidados para o front"""
+    global analisar_global
+    
     if analisar_global is None:
         return jsonify({"status": "aguardando inicialização..."})
 
     sinais_ativos = analisar_global.gerenciador.get_sinais_ativos()
-    sinais_finalizados = analisador.gerenciador.get_sinais_finalizados() # Adicionado 'analisador' para evitar erro. Usarei analisar_global
+    
+    # CORRIGIDO: Usando 'analisar_global'
     sinais_finalizados = analisar_global.gerenciador.get_sinais_finalizados() 
+    
     estatisticas = analisar_global.gerenciador.estatisticas.get_todas_estatisticas()
 
     return jsonify({
@@ -735,5 +744,4 @@ def data():
 if __name__ == "__main__":
     porta = int(os.environ.get("PORT", 10000))
     print(f"🚀 Servidor 1ZERO14X ativo na porta {porta}")
-    # Nota: Em ambientes como o Render, o Gunicorn é quem chama a aplicação, não o app.run().
     app.run(host="0.0.0.0", port=porta)
