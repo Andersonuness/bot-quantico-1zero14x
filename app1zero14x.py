@@ -1,98 +1,143 @@
-from flask import Flask, jsonify, render_template
+# ===============================================
+# 1ZERO14X - Versão Web (Render / Flask)
+# ===============================================
+import os
 import threading
 import time
 import requests
-import os 
-import sys 
+from datetime import datetime, timedelta, timezone
+from collections import deque, defaultdict
+from flask import Flask, jsonify, render_template
+from flask_httpauth import HTTPBasicAuth
 
+# -------------------------------
+# Configurações gerais e API Blaze
+# -------------------------------
+API_URL = 'https://blaze.bet.br/api/singleplayer-originals/originals/roulette_games/recent/1'
+FUSO_BRASIL = timezone(timedelta(hours=-3))
 
-# Assumindo que sua pasta de templates chama 'modelos'
-app = Flask(__name__, template_folder='modelos')
+def agora_brasil():
+    return datetime.now(FUSO_BRASIL)
 
-# Dicionário global que armazena os dados coletados
-dados_coletados = {
-    "ultimo": None,
-    "sinais": [],
-    "estatisticas": {
-        "sinais": 0,
-        "win": 0,
-        "loss": 0,
-        "assertividade": 0
-    }
-}
+def buscar_dados_api(api_url):
+    try:
+        response = requests.get(api_url, timeout=5)
+        response.raise_for_status()
+        data = response.json()
+        return data.get('data', [])
+    except Exception as e:
+        print(f"[ERRO API] {e}")
+        return []
 
+def processar_rodada(rodadas_data):
+    if not rodadas_data:
+        return None, None, None
+    rodada = rodadas_data[0]
+    cor = rodada.get('color', '').lower()
+    numero = rodada.get('roll')
+    horario_utc_str = rodada.get('created_at')
+    if horario_utc_str:
+        try:
+            horario_utc = datetime.fromisoformat(horario_utc_str.replace('Z', '+00:00'))
+            horario_brasil = horario_utc.astimezone(FUSO_BRASIL)
+            return cor, numero, horario_brasil
+        except:
+            return cor, numero, None
+    return cor, numero, None
 
-def coletar_dados_blaze():
-    """Loop contínuo para coletar os dados da Blaze periodicamente"""
-    global dados_coletados
-    
-    # Não há lógica de proxy/VPN aqui, a requisição usará o IP do Render.
-    
+# ----------------------------------------
+# CLASSES ORIGINAIS (mantém tua lógica toda)
+# ----------------------------------------
+
+# === AQUI cola todas as tuas classes originais ===
+# EstatisticasEstrategias, GerenciadorSinais e AnalisadorEstrategiaHorarios
+# (copiar exatamente como estão no teu código atual)
+# ----------------------------------------
+
+# Inicializa o analisador global
+analisar_global = None
+ultimo_id_processado = None
+
+# ----------------------------------------
+# Flask e autenticação
+# ----------------------------------------
+app = Flask(__name__, template_folder="modelos")
+auth = HTTPBasicAuth()
+
+USUARIOS_VALIDOS = {"adm": "P@$1zero14x!"}
+for i in range(1, 21):
+    USUARIOS_VALIDOS[f"user{i:02}"] = "P@$1zero14x!"
+
+@auth.verify_password
+def verificar(usuario, senha):
+    return USUARIOS_VALIDOS.get(usuario) == senha
+
+# ----------------------------------------
+# Função de coleta em thread
+# ----------------------------------------
+def iniciar_coleta_blaze():
+    global ultimo_id_processado
+    global analisar_global
+
+    analisar_global = AnalisadorEstrategiaHorarios()
+    print("🔄 Iniciando coleta da API Blaze...")
+
     while True:
         try:
-            url = "https://blaze.com/api/roulette_games/recent"
-            
-            # Requisição SEM proxy
-            resposta = requests.get(url, timeout=10) 
+            dados_rodadas = buscar_dados_api(API_URL)
+            if dados_rodadas:
+                rodada = dados_rodadas[0]
+                rodada_id = rodada.get('id')
 
-            if resposta.status_code == 200:
-                data = resposta.json()
+                if rodada_id and rodada_id != ultimo_id_processado:
+                    cor, numero, horario_real = processar_rodada(dados_rodadas)
+                    if cor and numero is not None and horario_real:
+                        print(f"[{horario_real.strftime('%H:%M:%S')}] {cor.upper()} {numero}")
+                        analisar_global.adicionar_rodada(cor, numero, horario_real)
+                        ultimo_id_processado = rodada_id
 
-                # Atualiza o último resultado e as 10 últimas jogadas
-                dados_coletados["ultimo"] = data[0]
-                dados_coletados["sinais"] = data[:10]
-
-                # Atualiza estatísticas básicas
-                total = len(data)
-                win = len([r for r in data if r["color"] == 1])
-                loss = len([r for r in data if r["color"] == 2])
-                assertividade = round((win / total) * 100, 2) if total > 0 else 0
-
-                dados_coletados["estatisticas"] = {
-                    "sinais": total,
-                    "win": win,
-                    "loss": loss,
-                    "assertividade": assertividade
-                }
-
-                print("✅ Dados atualizados com sucesso.", file=sys.stderr)
-
-            else:
-                print(f"⚠️ Erro ao acessar API Blaze ({resposta.status_code})", file=sys.stderr)
-
+                analisar_global.gerenciador.limpar_dados_antigos()
+            time.sleep(3)
         except Exception as e:
-            # O erro de Bloqueio de IP / Timeout (RequestException) cairá aqui
-            print(f"❌ Erro na coleta de dados: {e}", file=sys.stderr)
+            print(f"[ERRO THREAD] {e}")
+            time.sleep(5)
 
-        # Aguarda 5 segundos entre as coletas
-        time.sleep(5)
+@app.before_first_request
+def start_thread():
+    t = threading.Thread(target=iniciar_coleta_blaze, daemon=True)
+    t.start()
 
-
-@app.route('/')
+# ----------------------------------------
+# Rotas do site
+# ----------------------------------------
+@app.route("/")
 def index():
-    """Rota principal — carrega o painel (index.html)"""
-    return render_template('index.html')
+    return render_template("index.html")
 
-
-@app.route('/data')
+@app.route("/data")
+@auth.login_required
 def data():
-    """Rota que fornece os dados atualizados em JSON"""
-    return jsonify(dados_coletados)
+    """Retorna dados consolidados para o front"""
+    if not analisar_global:
+        return jsonify({"status": "aguardando dados..."})
 
+    sinais_ativos = analisar_global.gerenciador.get_sinais_ativos()
+    sinais_finalizados = analisar_global.gerenciador.get_sinais_finalizados()
+    estatisticas = analisar_global.gerenciador.estatisticas.get_todas_estatisticas()
 
-# =============================================================================
-# CORREÇÃO FINAL DA THREAD (RESOLVENDO O AttributeError)
-# =============================================================================
-# Substituído @app.before_first_request por @app.before_serving
-@app.before_serving
-def iniciar_coleta():
-    coletor_thread = threading.Thread(target=coletar_dados_blaze, daemon=True)
-    coletor_thread.start()
-    print("🚀 Thread de coleta de dados iniciada com sucesso.", file=sys.stderr)
+    return jsonify({
+        "status": "ok",
+        "ativos": len(sinais_ativos),
+        "finalizados": len(sinais_finalizados),
+        "estatisticas": estatisticas,
+        "sinais_ativos": sinais_ativos[-5:],
+        "sinais_finalizados": sinais_finalizados[-5:]
+    })
 
-
-if __name__ == '__main__':
-    # Pega a porta da variável de ambiente, ou usa 5000 como padrão
-    port = int(os.environ.get("PORT", 5000))
-    print(f"🚀 Servidor Flask iniciado na porta {port}.", file=sys.stderr)
-    app.run(host='0.0.0.0', port=port, debug=False)
+# ----------------------------------------
+# Execução
+# ----------------------------------------
+if __name__ == "__main__":
+    porta = int(os.environ.get("PORT", 10000))
+    print(f"🚀 Servidor 1ZERO14X ativo na porta {porta}")
+    app.run(host="0.0.0.0", port=porta)
